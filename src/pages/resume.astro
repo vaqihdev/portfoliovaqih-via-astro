@@ -1,0 +1,218 @@
+---
+export const prerender = false;
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+import { db } from '../db/index';
+import { resumeProfile, atsResumes } from '../db/schema';
+import { desc } from 'drizzle-orm';
+import HarvardTemplate from '../components/resume-builder/HarvardTemplate';
+import { defaultResumeContent } from '../components/resume-builder/types';
+
+let resumeData = null;
+
+try {
+  // Fetch all resumes and pick the most recently updated one that is NOT untitled
+  console.log("Fetching atsResumes...");
+  const allResumes = await db.select().from(atsResumes).orderBy(desc(atsResumes.updatedAt));
+  resumeData = allResumes.find(r => r.title !== 'Untitled Resume') || allResumes[0];
+  console.log("Fetched resumeData:", resumeData?.title);
+} catch (error) {
+  console.error("Database connection error in resume.astro:", error);
+}
+
+let content = defaultResumeContent;
+if (resumeData && resumeData.content) {
+  let dbContent: any = resumeData.content;
+  if (typeof dbContent === 'string') {
+    try { dbContent = JSON.parse(dbContent); } catch(e) {}
+  }
+  // Deep merge to ensure no missing keys
+  content = {
+    ...defaultResumeContent,
+    ...dbContent,
+    personal: { ...defaultResumeContent.personal, ...(dbContent.personal || {}) },
+    skills: { ...defaultResumeContent.skills, ...(dbContent.skills || {}) }
+  };
+}
+
+const title = content.personal?.fullName ? `Resume - ${content.personal.fullName}` : 'Resume';
+---
+
+<BaseLayout title={title}>
+  
+  <!-- Screen-only Layout -->
+  <div class="print:hidden min-h-screen bg-slate-50 py-12 px-4 flex flex-col items-center">
+    <!-- Action Bar -->
+    <div class="w-full max-w-[850px] flex justify-end mb-6">
+      <button id="execute-pdf-print" class="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors shadow-sm cursor-pointer">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+        Export PDF
+      </button>
+    </div>
+
+    <!-- Main Card containing Navbar, Resume, and Footer -->
+    <main class="w-full max-w-[850px] bg-white shadow-xl rounded-xl border border-slate-200 overflow-hidden flex flex-col">
+      <Navbar />
+      
+      <div class="flex-1 px-4 sm:px-8 py-12 md:py-16">
+        <HarvardTemplate content={content} />
+      </div>
+
+      <Footer />
+    </main>
+  </div>
+
+  <!-- Print-only Layout -->
+  <div class="hidden print:block w-full">
+    <table class="w-full">
+      <thead>
+        <tr>
+          <td>
+            <!-- Spacer to prevent content overlapping fixed header -->
+            <div style="height: 80px;"></div>
+          </td>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <HarvardTemplate content={content} />
+          </td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td>
+            <!-- Spacer to prevent content overlapping fixed footer -->
+            <div style="height: 140px;"></div>
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+    <Navbar />
+  </div>
+
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', () => {
+      const printBtn = document.getElementById('execute-pdf-print');
+      if (printBtn) {
+        printBtn.addEventListener('click', () => {
+          window.print();
+        });
+      }
+
+      // Auto-trigger print dialog if print=true query param is present
+      if (window.location.search.includes('print=true')) {
+        // Slight delay to ensure layout rendering is complete before print dialog opens
+        setTimeout(() => {
+          window.print();
+        }, 500);
+      }
+    });
+  </script>
+  
+  <style is:global>
+    /* Hide default BaseLayout footer on the resume page on screen */
+    body:has(main) > footer:not(main footer) {
+      display: none !important;
+    }
+
+    @media print {
+      @page { 
+        margin: 0; 
+        size: A4; 
+      }
+      
+      /* Standard CSS Print Reset to fix Chrome Flexbox pagination bugs */
+      html, body {
+        display: block !important;
+        background: white !important;
+        color: black !important;
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+        position: static !important;
+        -webkit-print-color-adjust: exact; 
+      }
+
+      /* Target BaseLayout's flex-1 container */
+      body > div {
+        display: block !important;
+        position: static !important;
+        width: 100% !important;
+        height: auto !important;
+      }
+
+      /* Fixed Header on every page aligned to A4 print content */
+      header.sticky {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 60px !important;
+        z-index: 1000 !important;
+        background: white !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+        display: block !important;
+        padding-left: 40px !important;
+        padding-right: 40px !important;
+      }
+      
+      header.sticky > div {
+        max-width: 100% !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        width: 100% !important;
+      }
+
+      /* Fixed Footer on every page aligned to A4 print content */
+      footer {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 120px !important;
+        z-index: 1000 !important;
+        background: white !important;
+        border-top: 1px solid #e2e8f0 !important;
+        display: block !important;
+        padding-left: 40px !important;
+        padding-right: 40px !important;
+      }
+
+      footer > footer {
+        border-top: none !important;
+        max-width: 100% !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        width: 100% !important;
+      }
+      
+      /* Force horizontal alignment for footer copyright bar in print */
+      footer .flex-col, footer > footer > div {
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        width: 100% !important;
+      }
+      
+      /* Hide navigation lists, buttons, etc. */
+      .print\:hidden, button, a[aria-label="GitHub"], a[aria-label="LinkedIn"] { 
+        display: none !important; 
+      }
+
+      /* Force resume template container to expand height naturally in print */
+      .font-serif {
+        height: auto !important;
+      }
+
+      /* Force elements to break before print page */
+      .print-break-before {
+        break-before: page !important;
+        page-break-before: always !important;
+      }
+    }
+  </style>
+</BaseLayout>

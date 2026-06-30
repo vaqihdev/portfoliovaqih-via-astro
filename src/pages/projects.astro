@@ -1,0 +1,84 @@
+---
+export const prerender = false;
+
+import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/Navbar.astro';
+import { db } from '../db';
+import { projectsLabs } from '../db/schema';
+import { desc } from 'drizzle-orm';
+
+const dbProjects = await db.select().from(projectsLabs).orderBy(desc(projectsLabs.id)).catch(() => []);
+const allProjects = dbProjects.filter(p => p.type !== 'Blog');
+
+const cleanDescription = (text) => {
+  if (!text) return { text: '', logo: null };
+  let unescaped = text.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+  const imgMatch = unescaped.match(/<img[^>]+src=["']([^"']+)["']/i);
+  const logo = imgMatch ? imgMatch[1] : null;
+  let cleanText = unescaped.replace(/<img[^>]*>/gi, '');
+  cleanText = cleanText.replace(/<[^>]*>?/gm, '');
+  cleanText = cleanText.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+  cleanText = cleanText.replace(/[#*`_]/g, '');
+  return {
+    text: cleanText.trim().substring(0, 120) + (cleanText.length > 120 ? '...' : ''),
+    logo
+  };
+};
+---
+
+<Layout title="Projects Vault | Muchamad Ghufron Vaqih">
+  <Navbar />
+  
+  <main class="w-full max-w-7xl mx-auto px-6 py-24 flex flex-col gap-10 min-h-[80vh] relative z-10">
+    <div class="flex items-end justify-between border-b border-slate-200 pb-6">
+      <div class="flex flex-col">
+        <h2 class="text-2xl font-semibold text-slate-900 tracking-tight">Projects & Sandbox Labs</h2>
+      </div>
+      <p class="text-sm text-slate-500 max-w-[300px] text-right hidden sm:block">
+        A historical index of verified system architecture implementations, automation environments, and experimental nodes.
+      </p>
+    </div>
+
+    {allProjects.length === 0 ? (
+      <div class="w-full text-center py-20 border border-slate-300 rounded-lg bg-white/50 text-sm text-slate-500 shadow-sm relative">
+        Repository list is empty.
+      </div>
+    ) : (
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {allProjects.map((project, idx) => {
+          const { text: previewText, logo } = cleanDescription(project.description);
+          return (
+          <div class="bg-white border border-slate-300 rounded-lg p-5 hover:border-slate-400 transition-colors flex flex-col justify-between h-full shadow-sm">
+            
+            <div class="flex flex-col">
+              <div class="flex items-center gap-2 mb-2">
+                <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="text-slate-500">
+                  <path fill="currentColor" fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z"></path>
+                </svg>
+                <a href={`/projects/${project.id}`} class="text-base font-semibold text-blue-600 hover:underline break-words flex-1 leading-tight">
+                  {project.title}
+                </a>
+                <span class="px-2 py-0.5 border border-slate-200 rounded-full text-xs text-slate-500 font-medium hidden sm:block">Public</span>
+              </div>
+              
+              <p class="text-slate-600 text-xs font-sans mb-6 line-clamp-3 leading-relaxed mt-1">
+                {previewText}
+              </p>
+            </div>
+            
+            <div class="flex items-center gap-4 text-xs text-slate-500 font-sans mt-4">
+              <div class="flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full" style={`background-color: ${project.type === 'LAB' ? '#f1e05a' : '#3178c6'}`}></span>
+                <span>{project.tools ? project.tools.split(',')[0].trim() : 'System'}</span>
+              </div>
+              
+              
+            </div>
+            
+          </div>
+          );
+        })}
+      </div>
+    )}
+  </main>
+</Layout>

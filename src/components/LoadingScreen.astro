@@ -1,0 +1,193 @@
+---
+---
+<div id="global-loader" class="print:hidden fixed inset-0 z-[9999] bg-[#070b15] flex flex-col items-center justify-center font-mono text-slate-300 select-none overflow-hidden transition-all duration-700 ease-in-out">
+  <!-- Glowing Cloud Infrastructure Background Grid -->
+  <div class="absolute inset-0 bg-[linear-gradient(to_right,#1e293b12_1px,transparent_1px),linear-gradient(to_bottom,#1e293b12_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none"></div>
+  <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+  <!-- Loading Wrapper -->
+  <div class="relative w-full max-w-lg px-6 flex flex-col items-center gap-8">
+    
+    <!-- DevOps Orbital HUD / Tech Spinner -->
+    <div class="relative w-32 h-32 flex items-center justify-center">
+      <!-- Outer Orbit (dashed) -->
+      <div class="absolute inset-0 border-2 border-dashed border-blue-500/30 rounded-full animate-[spin_20s_linear_infinite]"></div>
+      <!-- Middle Orbit (glowing, solid segments) -->
+      <div class="absolute inset-2 border border-cyan-500/40 rounded-full border-t-transparent border-b-transparent animate-[spin_8s_linear_infinite_reverse]"></div>
+      <!-- Inner Orbit (hexagon or fast spinner) -->
+      <div class="absolute inset-6 border-2 border-dotted border-indigo-500/60 rounded-full animate-[spin_4s_linear_infinite]"></div>
+      
+      <!-- Center Kubernetes-like / Cloud Core Node -->
+      <div class="relative w-12 h-12 bg-slate-900 border border-blue-500 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.5)]">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-cyan-400 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+      </div>
+
+      <!-- Pulse waves -->
+      <div class="absolute inset-0 border-2 border-blue-500 rounded-full animate-ping opacity-10"></div>
+    </div>
+
+    <!-- Title & Status -->
+    <div class="text-center flex flex-col gap-2">
+      <h2 class="text-sm font-bold tracking-[0.3em] text-white uppercase flex items-center justify-center gap-2">
+        <span class="inline-block w-2.5 h-2.5 bg-cyan-500 rounded-full animate-ping"></span>
+        VAQIH.INFRA.DEPLOY
+      </h2>
+      <p id="loader-status-text" class="text-xs text-blue-400 font-bold uppercase tracking-wider h-4">INITIALIZING SYSTEM...</p>
+    </div>
+
+    <!-- Console Log Display Box -->
+    <div class="w-full bg-slate-950/80 border border-slate-800 rounded-lg p-4 h-48 overflow-hidden shadow-2xl relative font-mono">
+      <!-- Terminal Header -->
+      <div class="flex items-center justify-between border-b border-slate-900 pb-2 mb-3 text-[10px] text-slate-500">
+        <div class="flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-red-500/70 inline-block"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-yellow-500/70 inline-block"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-green-500/70 inline-block"></span>
+          <span class="ml-2 font-mono">vaqih-devops-pipeline.sh</span>
+        </div>
+        <span id="loader-pct">0%</span>
+      </div>
+      
+      <!-- Terminal Lines -->
+      <div id="loader-console" class="flex flex-col gap-1.5 text-[11px] leading-relaxed text-slate-400 overflow-y-auto h-[120px] scrollbar-none">
+        <!-- Lines will be dynamically appended here -->
+      </div>
+    </div>
+
+    <!-- System Progress Bar -->
+    <div class="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden border border-slate-800">
+      <div id="loader-progress-bar" class="bg-gradient-to-r from-blue-600 via-cyan-400 to-indigo-500 h-1.5 w-0 transition-all duration-300 ease-out"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const logs = [
+    { type: 'info', text: 'Initializing cloud deployment pipeline...' },
+    { type: 'info', text: 'Locating state backend: s3://vaqih-tf-state...' },
+    { type: 'success', text: 'State locked successfully. Version: 1.8.2' },
+    { type: 'warn', text: 'Warning: 3 modules have pending updates.' },
+    { type: 'info', text: 'Applying changes to vpc-network (google_compute_network)...' },
+    { type: 'success', text: 'Network route tables configured.' },
+    { type: 'info', text: 'Creating kubernetes-cluster (google_container_node_pool)...' },
+    { type: 'info', text: 'Configuring ingress controller & SSL certificates...' },
+    { type: 'success', text: 'DNS mapped: vaqih.dev -> 185.199.110.153' },
+    { type: 'info', text: 'Injecting Zero-Trust IAM roles & security policies...' },
+    { type: 'success', text: 'All nodes healthy. Deployment completed!' }
+  ];
+
+  const statusTexts = [
+    'INITIALIZING SYSTEM...',
+    'CONNECTING BACKEND...',
+    'PROVISIONING NETWORKS...',
+    'SPAWNING K8S NODES...',
+    'SECURING CREDENTIALS...',
+    'READY'
+  ];
+
+  const loader = document.getElementById('global-loader');
+  const consoleDisplay = document.getElementById('loader-console');
+  const progressBar = document.getElementById('loader-progress-bar');
+  const statusDisplay = document.getElementById('loader-status-text');
+  const pctDisplay = document.getElementById('loader-pct');
+
+  if (loader && consoleDisplay && progressBar && statusDisplay && pctDisplay) {
+    let logIndex = 0;
+    let progress = 0;
+    let isWindowLoaded = false;
+
+    // Track window load
+    window.addEventListener('load', () => {
+      isWindowLoaded = true;
+    });
+
+    // Fallback if window load takes too long
+    const forceLoadTimeout = setTimeout(() => {
+      isWindowLoaded = true;
+    }, 4000);
+
+    function addLogLine(log: { type: string; text: string }) {
+      if (!consoleDisplay) return;
+      const line = document.createElement('div');
+      
+      let prefix = '';
+      if (log.type === 'info') {
+        prefix = '<span class="text-blue-400 font-bold">[INFO]</span>';
+      } else if (log.type === 'success') {
+        prefix = '<span class="text-emerald-400 font-bold">[OK]</span>';
+      } else if (log.type === 'warn') {
+        prefix = '<span class="text-amber-500 font-bold">[WARN]</span>';
+      }
+
+      line.innerHTML = `${prefix} ${log.text}`;
+      consoleDisplay.appendChild(line);
+      consoleDisplay.scrollTop = consoleDisplay.scrollHeight;
+    }
+
+    function updateLoader() {
+      if (!progressBar || !pctDisplay || !statusDisplay || !loader) return;
+
+      // Log progression
+      if (logIndex < logs.length) {
+        addLogLine(logs[logIndex]);
+        logIndex++;
+      }
+
+      // Update progress value based on whether window is loaded
+      if (progress < 85) {
+        progress += Math.floor(Math.random() * 12) + 5;
+        if (progress > 85) progress = 85;
+      } else if (isWindowLoaded && progress < 100) {
+        progress += 5;
+      }
+
+      if (progress > 100) progress = 100;
+
+      // Update UI elements
+      progressBar.style.width = `${progress}%`;
+      pctDisplay.textContent = `${progress}%`;
+
+      // Update Status Text
+      const statusIdx = Math.min(
+        Math.floor((progress / 100) * statusTexts.length),
+        statusTexts.length - 1
+      );
+      statusDisplay.textContent = statusTexts[statusIdx];
+
+      // Continue update or finish
+      if (progress < 100 || !isWindowLoaded) {
+        // Adjust interval dynamically for realistic feel
+        const delay = Math.random() * 200 + 150;
+        setTimeout(updateLoader, delay);
+      } else {
+        // Finalize
+        statusDisplay.textContent = 'READY';
+        addLogLine({ type: 'success', text: 'System initialized. Loading UI...' });
+        
+        clearTimeout(forceLoadTimeout);
+
+        // Smooth Fade Out
+        setTimeout(() => {
+          loader.classList.add('opacity-0', 'pointer-events-none');
+          // Fully remove from view after fade animation concludes
+          setTimeout(() => {
+            loader.style.display = 'none';
+          }, 700);
+        }, 500);
+      }
+    }
+
+    // Start loading sequence
+    updateLoader();
+  }
+</script>
+
+<style>
+  @media print {
+    #global-loader {
+      display: none !important;
+    }
+  }
+</style>

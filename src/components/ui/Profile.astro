@@ -1,0 +1,50 @@
+---
+// Profile.astro
+---
+<section id="profile" class="pt-20">
+  <div class="grid md:grid-cols-[1fr_2fr] gap-12">
+    <div>
+      <div class="text-blue-600 font-mono text-sm mb-4"># vaqihdev_trust</div>
+      <h2 class="text-3xl font-bold text-slate-900 dark:text-white leading-tight mb-6">
+        Architecting Cloud Trust
+      </h2>
+      <p class="text-slate-500 text-sm italic border-l-2 border-slate-200 dark:border-slate-800 pl-4 mb-8">
+        A seamless synthesis of application code, operations discipline, and highly available networks.
+      </p>
+      
+      <div class="space-y-4 text-sm font-mono text-slate-600 dark:text-slate-400">
+        <div class="flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+          Based in: Indonesia
+        </div>
+        <div class="flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+          Industry: Medical Technology
+        </div>
+      </div>
+    </div>
+    
+    <div class="space-y-6 text-slate-600 dark:text-slate-400 leading-relaxed text-sm sm:text-base">
+      <p>
+        I began my journey in technology as a <strong>Full Stack Developer</strong>, crafting web applications and writing code. This phase gave me a deep understanding of application lifecycles, database querying, APIs, and front-end performance. However, as I scaled my projects, I found myself increasingly drawn to the underlying machinery: the servers, network configurations, deployments, and automation.
+      </p>
+      <p>
+        This curiosity led me to a <strong>Project Support</strong> role in the <strong>Medical Technology</strong> industry. In this high-stakes domain, I learned the critical importance of reliability, data integrity, security, compliance, and procedural rigor. I was bridging the gap between hardware, clinical software systems, and engineering teams, managing infrastructure requirements under strict regulatory environments.
+      </p>
+      <p>
+        Today, I have converged my developer roots and high-availability systems experience to focus entirely on <strong>Cloud Infrastructure Engineering</strong>. I specialize in creating robust cloud environments using <strong>Infrastructure as Code (IaC)</strong>, establishing secure and fast <strong>CI/CD pipelines</strong>, containerizing microservices, and setting up centralized monitoring. My core mission is to treat infrastructure exactly like software: fully versioned, automated, tested, and self-healing.
+      </p>
+
+      <div class="pt-8">
+        <div class="text-xs font-mono text-slate-400 mb-4 uppercase tracking-wider">Engineering Specialties</div>
+        <div class="flex flex-wrap gap-2">
+          {['AWS Compute (EC2, ECS, EKS, RDS, S3, CloudFront, Lambda)', 'Infrastructure as Code (Terraform)', 'Containerization & Orchestration (Docker, Kubernetes)', 'Linux System Administration & Bash Scripting', 'CI/CD Automation (GitHub Actions, GitLab CI)', 'Network Engineering & Cloud Security', 'Monitoring, Logging & Observability (Prometheus, Grafana)'].map(tag => (
+            <span class="px-3 py-1 text-xs font-mono border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 rounded hover:border-blue-500 hover:text-blue-600 transition-colors cursor-default">
+              {tag}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

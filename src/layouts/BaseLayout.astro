@@ -1,0 +1,27 @@
+---
+import '../assets/global.css';
+import Logo from '../components/Logo.astro';
+import Footer from '../components/Footer.astro';
+import LoadingScreen from '../components/LoadingScreen.astro';
+
+interface Props {
+  title?: string;
+}
+
+const { title = 'Muchamad Ghufron Vaqih | Developer Portfolio' } = Astro.props;
+---
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+</head>
+<body class="bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-50 font-sans antialiased selection:bg-blue-200 dark:selection:bg-blue-900 flex flex-col min-h-screen">
+  <LoadingScreen />
+  <div class="flex-1">
+    <slot />
+  </div>
+  <Footer />
+</body>
+</html>
