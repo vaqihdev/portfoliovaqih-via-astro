@@ -4,17 +4,22 @@ export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import Navbar from '../../components/Navbar.astro';
 import { db } from '../../db';
-import { projectsLabs } from '../../db/schema';
-import { eq, and } from 'drizzle-orm';
+import { engineeringAssets } from '../../db/schema';
+import { eq, and, inArray } from 'drizzle-orm';
 import { marked } from 'marked';
 
 const { id } = Astro.params;
 
 let lab = null;
 try {
-  const result = await db.select().from(projectsLabs).where(and(eq(projectsLabs.id, Number(id)), eq(projectsLabs.type, 'Lab'))).limit(1);
-  if (result.length > 0) {
-    lab = result[0];
+  const result = await db.select().from(engineeringAssets).where(and(inArray(engineeringAssets.type, ['Lab', 'Blog']), eq(engineeringAssets.id, Number(id)))).limit(1);
+  if (result && result.length > 0) {
+    const raw = result[0];
+    lab = {
+      ...raw,
+      tools: (raw.technologyStack as string[])?.join(', ') || '',
+      description: raw.detailedContent
+    };
   }
 } catch (e) {
   console.error("Error fetching lab:", e);
@@ -51,7 +56,7 @@ const htmlContent = marked.parse(lab.description);
         <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight mb-4">{lab.title}</h1>
         
         <div class="flex flex-wrap gap-2">
-          {lab.tools.split(',').map((tool) => (
+          {lab.tools.split(',').map((tool: string) => (
             <span class="px-2.5 py-1 bg-white border border-slate-200 text-slate-600 font-mono text-[10px] rounded-md shadow-sm">
               {tool.trim()}
             </span>

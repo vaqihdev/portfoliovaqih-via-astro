@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import { useRef } from "react";
 import {
   motion,
   useScroll,
@@ -38,7 +38,7 @@ export function VelocityScroll({ text, defaultVelocity = 3, className = "" }: Ve
   const x = useTransform(baseX, (v) => `${wrap(-25, -50, v)}%`);
   const directionFactor = useRef<number>(1);
   
-  useAnimationFrame((t, delta) => {
+  useAnimationFrame((_, delta) => {
     let moveBy = directionFactor.current * defaultVelocity * (delta / 1000);
     
     // Change direction based on scroll velocity

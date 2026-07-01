@@ -4,13 +4,17 @@ export const prerender = false;
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Navbar from '../components/Navbar.astro';
 import { db } from '../db/index';
-import { projectsLabs } from '../db/schema';
+import { engineeringAssets } from '../db/schema';
 import { desc } from 'drizzle-orm';
 
-let allProjects: typeof projectsLabs.$inferSelect[] = [];
+let allProjects: any[] = [];
 try {
-  const dbProjects = await db.select().from(projectsLabs).orderBy(desc(projectsLabs.id));
-  allProjects = dbProjects.filter(p => p.type === 'Project');
+  const dbProjects = await db.select().from(engineeringAssets).orderBy(desc(engineeringAssets.id));
+  allProjects = dbProjects.map(proj => ({
+    ...proj,
+    tools: (proj.technologyStack as string[])?.join(', ') || '',
+    description: proj.detailedContent
+  })).filter(p => p.type === 'Project');
 } catch (error) {
   console.error("Database connection error:", error);
 }
@@ -23,7 +27,7 @@ const cleanDescription = (text: string | null) => {
 
 // Extract unique categories from tools
 const uniqueCategories = Array.from(new Set(
-  allProjects.flatMap(project => (project.tools ? project.tools.split(',').map(t => t.trim()) : []))
+  allProjects.flatMap(proj => (proj.tools ? proj.tools.split(',').map((t: string) => t.trim()) : []))
 )).filter(Boolean).sort();
 ---
 
@@ -63,17 +67,17 @@ const uniqueCategories = Array.from(new Set(
         <>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="projects-grid">
             {allProjects.map(project => {
-              const projectCategories = (project.tools ? project.tools.split(',').map(t => t.trim().toLowerCase()) : []);
+              const projCategories = (project.tools ? project.tools.split(',').map((t: string) => t.trim().toLowerCase()) : []);
               const dateOptions: Intl.DateTimeFormatOptions = { month: 'long', year: 'numeric' };
               const formattedDate = project.createdAt ? new Date(project.createdAt).toLocaleDateString('en-US', dateOptions) : 'Unknown Date';
               
               return (
-                <div class="project-card group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-300 flex flex-col h-full" data-categories={projectCategories.join(',')}>
+                <div class="project-card group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-300 flex flex-col h-full" data-categories={projCategories.join(',')}>
                   <div class="p-6 flex flex-col flex-grow">
                     
                     {/* Header */}
                     <div class="flex items-center gap-2 mb-3 flex-wrap">
-                      {(project.tools ? project.tools.split(',') : []).slice(0, 2).map(tag => (
+                      {(project.tools ? project.tools.split(',') : []).slice(0, 3).map((tag: string) => (
                         <span class="text-[10px] font-mono font-bold tracking-widest text-blue-600 dark:text-blue-400 uppercase bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-sm">
                           {tag.trim()}
                         </span>
@@ -151,7 +155,7 @@ const uniqueCategories = Array.from(new Set(
           const categories = card.getAttribute('data-categories') || '';
           const categoryArray = categories.split(',');
 
-          if (category === 'all' || categoryArray.includes(category)) {
+        if (category && (category === 'all' || categoryArray.includes(category))) {
             (card as HTMLElement).style.display = 'flex';
             visibleCount++;
           } else {

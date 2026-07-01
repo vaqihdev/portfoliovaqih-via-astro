@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { ResumeData, ResumeContent } from './types';
 import { defaultResumeContent } from './types';
 import EditorPanel from '@/components/resume-builder/EditorPanel.tsx';

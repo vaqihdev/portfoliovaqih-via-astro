@@ -11,14 +11,51 @@ export const landingMetadata = pgTable('landing_metadata', {
   coreDomains: text('core_domains').notNull(),
 });
 
-export const projectsLabs = pgTable('projects_labs', {
+export const engineeringAssets = pgTable('engineering_assets', {
   id: serial('id').primaryKey(),
   title: varchar('title', { length: 255 }).notNull(),
+  slug: varchar('slug', { length: 255 }).notNull().unique(),
+  category: varchar('category', { length: 100 }).notNull(),
   type: varchar('type', { length: 50 }).notNull(),
-  tools: text('tools').notNull(),
-  description: text('description').notNull(),
+  summary: text('summary').notNull(),
+  detailedContent: text('detailed_content').notNull(),
+  status: varchar('status', { length: 50 }).notNull(),
+  difficulty: varchar('difficulty', { length: 50 }).notNull(),
+  technologyStack: jsonb('technology_stack').default([]).notNull(),
+  cloudProvider: varchar('cloud_provider', { length: 100 }).notNull(),
+  operatingSystem: varchar('operating_system', { length: 100 }).notNull(),
+  repositoryUrl: varchar('repository_url', { length: 255 }).default('').notNull(),
+  liveDemoUrl: varchar('live_demo_url', { length: 255 }).default('').notNull(),
+  documentationUrl: varchar('documentation_url', { length: 255 }).default('').notNull(),
+  startedDate: timestamp('started_date'),
+  completedDate: timestamp('completed_date'),
+  readingTime: varchar('reading_time', { length: 50 }).default('5 min').notNull(),
+  estimatedBuildTime: varchar('estimated_build_time', { length: 100 }).default('').notNull(),
+  version: varchar('version', { length: 50 }).default('1.0.0').notNull(),
   isFeatured: boolean('is_featured').default(false).notNull(),
+  tags: jsonb('tags').default([]).notNull(),
+  thumbnail: varchar('thumbnail', { length: 500 }).default('').notNull(),
+  banner: varchar('banner', { length: 500 }).default('').notNull(),
+  galleryImages: jsonb('gallery_images').default([]).notNull(),
+  author: varchar('author', { length: 100 }).default('Muchamad Ghufron Vaqih').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const incidentReports = pgTable('incident_reports', {
+  id: serial('id').primaryKey(),
+  incidentId: varchar('incident_id', { length: 100 }).notNull().unique(),
+  severity: varchar('severity', { length: 50 }).notNull(),
+  impact: text('impact').notNull(),
+  rootCause: text('root_cause').notNull(),
+  timeline: text('timeline').notNull(),
+  mitigation: text('mitigation').notNull(),
+  resolution: text('resolution').notNull(),
+  lessonsLearned: text('lessons_learned').notNull(),
+  status: varchar('status', { length: 50 }).notNull(),
+  relatedProject: integer('related_project').references(() => engineeringAssets.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
 export const capabilities = pgTable('capabilities', {

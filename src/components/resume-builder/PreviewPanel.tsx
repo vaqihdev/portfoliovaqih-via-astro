@@ -1,4 +1,4 @@
-import React from 'react';
+
 import type { ResumeData } from './types';
 import HarvardTemplate from './HarvardTemplate';
 import NavbarReact from './NavbarReact';

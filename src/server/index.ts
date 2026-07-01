@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import { setCookie, deleteCookie } from 'hono/cookie';
 import { db } from '../db/index';
-import { projectsLabs, capabilities, landingMetadata, atsResumes } from '../db/schema';
-import { eq, asc } from 'drizzle-orm';
+import { engineeringAssets, incidentReports, capabilities, landingMetadata, atsResumes } from '../db/schema';
+import { eq, asc, desc } from 'drizzle-orm';
 
 const app = new Hono().basePath('/api');
 
@@ -27,12 +27,144 @@ app.post('/auth', async (c) => {
   return c.json({ success: false, message: 'Invalid Credentials' }, 401);
 });
 
-app.get('/projects-labs', async (c) => {
+// -- Engineering Assets API --
+app.get('/engineering-assets', async (c) => {
   try {
-    const data = await db.select().from(projectsLabs).orderBy(asc(projectsLabs.id));
+    const data = await db.select().from(engineeringAssets).orderBy(desc(engineeringAssets.id));
     return c.json({ success: true, data });
   } catch (err) {
     return c.json({ success: false, message: 'Database query failed' }, 500);
+  }
+});
+
+app.post('/engineering-assets', async (c) => {
+  try {
+    const body = await c.req.json();
+    await db.insert(engineeringAssets).values({
+      title: body.title,
+      slug: body.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
+      category: body.category || 'Uncategorized',
+      type: body.type || 'Project',
+      summary: body.summary || body.description?.substring(0, 150) || '',
+      detailedContent: body.detailedContent || body.description || '',
+      status: body.status || 'Draft',
+      difficulty: body.difficulty || 'Intermediate',
+      technologyStack: body.technologyStack || (body.tools ? body.tools.split(',').map((t: string) => t.trim()) : []),
+      cloudProvider: body.cloudProvider || 'Unknown',
+      operatingSystem: body.operatingSystem || 'Linux',
+      repositoryUrl: body.repositoryUrl || '',
+      liveDemoUrl: body.liveDemoUrl || '',
+      documentationUrl: body.documentationUrl || '',
+      startedDate: body.startedDate ? new Date(body.startedDate) : null,
+      completedDate: body.completedDate ? new Date(body.completedDate) : null,
+      readingTime: body.readingTime || '5 min',
+      estimatedBuildTime: body.estimatedBuildTime || '1 day',
+      version: body.version || '1.0.0',
+      isFeatured: body.isFeatured === true || body.isFeatured === 'true',
+      tags: body.tags || [],
+      thumbnail: body.thumbnail || '',
+      banner: body.banner || '',
+      galleryImages: body.galleryImages || [],
+      author: body.author || 'Muchamad Ghufron Vaqih',
+    });
+    return c.json({ success: true });
+  } catch (err: any) {
+    console.error(err);
+    return c.json({ success: false, message: 'Insert failed: ' + err.message }, 500);
+  }
+});
+
+app.delete('/engineering-assets/:id', async (c) => {
+  try {
+    const id = parseInt(c.req.param('id'), 10);
+    await db.delete(engineeringAssets).where(eq(engineeringAssets.id, id));
+    return c.json({ success: true });
+  } catch (err) {
+    return c.json({ success: false, message: 'Delete failed' }, 500);
+  }
+});
+
+// -- Incident Reports API --
+app.get('/incident-reports', async (c) => {
+  try {
+    const data = await db.select().from(incidentReports).orderBy(desc(incidentReports.id));
+    return c.json({ success: true, data });
+  } catch (err) {
+    return c.json({ success: false, message: 'Database query failed' }, 500);
+  }
+});
+
+app.post('/incident-reports', async (c) => {
+  try {
+    const body = await c.req.json();
+    await db.insert(incidentReports).values({
+      incidentId: body.incidentId || `INC-${Date.now()}`,
+      severity: body.severity || 'Low',
+      impact: body.impact || '',
+      rootCause: body.rootCause || '',
+      timeline: body.timeline || '',
+      mitigation: body.mitigation || '',
+      resolution: body.resolution || '',
+      lessonsLearned: body.lessonsLearned || '',
+      status: body.status || 'Open',
+      relatedProject: body.relatedProject ? parseInt(body.relatedProject, 10) : null,
+    });
+    return c.json({ success: true });
+  } catch (err: any) {
+    return c.json({ success: false, message: 'Insert failed: ' + err.message }, 500);
+  }
+});
+
+app.delete('/incident-reports/:id', async (c) => {
+  try {
+    const id = parseInt(c.req.param('id'), 10);
+    await db.delete(incidentReports).where(eq(incidentReports.id, id));
+    return c.json({ success: true });
+  } catch (err) {
+    return c.json({ success: false, message: 'Delete failed' }, 500);
+  }
+});
+
+// -- Legacy Endpoints (For existing layout calls that haven't been updated) --
+app.get('/projects-labs', async (c) => {
+  try {
+    const data = await db.select().from(engineeringAssets).orderBy(asc(engineeringAssets.id));
+    return c.json({ success: true, data: data.map(d => ({ ...d, description: d.detailedContent, tools: (d.technologyStack as string[]).join(', ') })) });
+  } catch (err) {
+    return c.json({ success: false, message: 'Database query failed' }, 500);
+  }
+});
+
+app.post('/projects-labs', async (c) => {
+  try {
+    const body = await c.req.json();
+    await db.insert(engineeringAssets).values({
+      title: body.title,
+      slug: body.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
+      category: 'Uncategorized',
+      type: body.type,
+      summary: body.description?.substring(0, 150) || '',
+      detailedContent: body.description || '',
+      status: body.status || 'Completed',
+      difficulty: body.difficulty || 'Intermediate',
+      technologyStack: body.tools ? body.tools.split(',').map((t: string) => t.trim()) : [],
+      cloudProvider: body.cloudProvider || 'Unknown',
+      operatingSystem: body.operatingSystem || 'Linux',
+      isFeatured: body.isFeatured === true || body.isFeatured === 'true',
+    });
+    return c.json({ success: true });
+  } catch (err) {
+    return c.json({ success: false, message: 'Insert failed' }, 500);
+  }
+});
+
+app.delete('/projects-labs/:id', async (c) => {
+  try {
+    const id = parseInt(c.req.param('id'), 10);
+    await db.delete(engineeringAssets).where(eq(engineeringAssets.id, id));
+    return c.json({ success: true });
+  } catch (err) {
+    return c.json({ success: false, message: 'Delete failed' }, 500);
   }
 });
 
@@ -48,32 +180,6 @@ app.get('/capabilities', async (c) => {
 app.get('/logout', (c) => {
   deleteCookie(c, 'admin_session', { path: '/' });
   return c.redirect('/');
-});
-
-app.post('/projects-labs', async (c) => {
-  try {
-    const body = await c.req.json();
-    await db.insert(projectsLabs).values({
-      title: body.title,
-      type: body.type,
-      description: body.description || '',
-      isFeatured: body.isFeatured === true || body.isFeatured === 'true',
-      tools: body.tools || ''
-    });
-    return c.json({ success: true });
-  } catch (err) {
-    return c.json({ success: false, message: 'Insert failed' }, 500);
-  }
-});
-
-app.delete('/projects-labs/:id', async (c) => {
-  try {
-    const id = parseInt(c.req.param('id'), 10);
-    await db.delete(projectsLabs).where(eq(projectsLabs.id, id));
-    return c.json({ success: true });
-  } catch (err) {
-    return c.json({ success: false, message: 'Delete failed' }, 500);
-  }
 });
 
 app.post('/capabilities', async (c) => {
@@ -104,8 +210,6 @@ app.delete('/capabilities/:id', async (c) => {
 app.put('/landing-metadata', async (c) => {
   try {
     const body = await c.req.json();
-    
-    // Retry logic for Neon serverless cold starts
     const attemptUpdate = async (retries = 3): Promise<void> => {
       try {
         const existing = await db.select().from(landingMetadata).limit(1);
@@ -143,17 +247,10 @@ app.put('/landing-metadata', async (c) => {
     await attemptUpdate();
     return c.json({ success: true });
   } catch (err: any) {
-    console.error('Update failed error:', err);
     return c.json({ success: false, message: 'Database connection failed. Please try again.', error: err.message || err.toString() }, 500);
   }
 });
 
-// ---------------------------------------------------------------------------
-// GET /api/contributions
-// Aggregates all CMS content by creation date to power the heatmap.
-// Each table query is independent — one failure won't break the whole response.
-// To add a new table in the future: query it below and merge into `heatmap`.
-// ---------------------------------------------------------------------------
 app.get('/contributions', async (c) => {
   type HeatmapEntry = { type: string; title: string };
   const heatmap: Record<string, HeatmapEntry[]> = {};
@@ -175,14 +272,13 @@ app.get('/contributions', async (c) => {
     heatmap[dateKey].push(entry);
   };
 
-  // 1. projectsLabs — Projects, Labs, Blogs
   try {
-    const plRows = await db
-      .select({ id: projectsLabs.id, title: projectsLabs.title, type: projectsLabs.type, createdAt: projectsLabs.createdAt })
-      .from(projectsLabs)
-      .orderBy(asc(projectsLabs.id));
+    const eaRows = await db
+      .select({ id: engineeringAssets.id, title: engineeringAssets.title, type: engineeringAssets.type, createdAt: engineeringAssets.createdAt })
+      .from(engineeringAssets)
+      .orderBy(asc(engineeringAssets.id));
 
-    for (const row of plRows) {
+    for (const row of eaRows) {
       const key = toDateKey(row.createdAt);
       const rowType = row.type?.toUpperCase();
       if (rowType === 'LAB') {
@@ -193,12 +289,8 @@ app.get('/contributions', async (c) => {
         addEntry(key, { type: 'Project', title: row.title });
       }
     }
-  } catch (err) {
-    console.error('[contributions] projectsLabs query failed:', err);
-    // Continue — don't abort the whole response
-  }
+  } catch (err) {}
 
-  // 2. atsResumes — independent query, won't break if it fails
   try {
     const resumeRows = await db
       .select({ id: atsResumes.id, title: atsResumes.title, createdAt: atsResumes.createdAt, updatedAt: atsResumes.updatedAt })
@@ -206,15 +298,11 @@ app.get('/contributions', async (c) => {
       .orderBy(asc(atsResumes.id));
 
     for (const row of resumeRows) {
-      // Try createdAt first, fall back to updatedAt
       const key = toDateKey(row.createdAt) ?? toDateKey(row.updatedAt);
       totalResumes++;
       addEntry(key, { type: 'Resume', title: row.title || 'Untitled Resume' });
     }
-  } catch (err) {
-    console.error('[contributions] atsResumes query failed:', err);
-    // Continue — projectsLabs data is still valid
-  }
+  } catch (err) {}
 
   const allDates = Object.keys(heatmap).sort();
   const lastUpdated = allDates.length > 0 ? allDates[allDates.length - 1] : null;

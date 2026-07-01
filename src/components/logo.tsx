@@ -1,4 +1,4 @@
-import type React from "react";
+
 
 export const Logo = ({ className }: { className?: string }) => (
 	<div className={`font-mono text-base font-bold flex items-center space-x-1 select-none ${className || ''}`}>

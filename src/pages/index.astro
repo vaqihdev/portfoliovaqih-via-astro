@@ -8,8 +8,8 @@ import Shuffle from '../components/Shuffle.jsx';
 import SplitText from '../components/SplitText.jsx';
 import ContributionHeatmap from '../components/ContributionHeatmap';
 import { db } from '../db';
-import { landingMetadata, projectsLabs, capabilities, atsResumes } from '../db/schema';
-import { eq, desc, not, inArray, or } from 'drizzle-orm';
+import { landingMetadata, engineeringAssets, capabilities, atsResumes } from '../db/schema';
+import { eq, desc, inArray } from 'drizzle-orm';
 
 // Helper to handle Neon DB cold starts
 async function fetchWithRetry<T>(queryFn: () => Promise<T>, retries = 3, delayMs = 1500): Promise<T> {
@@ -26,9 +26,11 @@ async function fetchWithRetry<T>(queryFn: () => Promise<T>, retries = 3, delayMs
 
 // Fetch Live Data
 const siteMeta = await fetchWithRetry(() => db.select().from(landingMetadata).limit(1).then(res => res[0])).catch(() => null);
-const featuredProjects = (await fetchWithRetry(() => db.select().from(projectsLabs).where(eq(projectsLabs.type, 'Project')).orderBy(desc(projectsLabs.id))).catch(() => [])) as any[];
+const featuredProjectsRaw = (await fetchWithRetry(() => db.select().from(engineeringAssets).where(eq(engineeringAssets.type, 'Project')).orderBy(desc(engineeringAssets.id))).catch(() => [])) as any[];
+const featuredProjects = featuredProjectsRaw.map(p => ({ ...p, tools: (p.technologyStack as string[])?.join(', ') || '', description: p.detailedContent }));
 const allCaps = (await fetchWithRetry(() => db.select().from(capabilities).orderBy(capabilities.orderIndex)).catch(() => [])) as any[];
-const recentLabs = (await fetchWithRetry(() => db.select().from(projectsLabs).where(inArray(projectsLabs.type, ['Lab', 'Blog'])).orderBy(desc(projectsLabs.id)).limit(5)).catch(() => [])) as any[];
+const recentLabsRaw = (await fetchWithRetry(() => db.select().from(engineeringAssets).where(inArray(engineeringAssets.type, ['Lab', 'Blog'])).orderBy(desc(engineeringAssets.id)).limit(5)).catch(() => [])) as any[];
+const recentLabs = recentLabsRaw.map(l => ({ ...l, tools: (l.technologyStack as string[])?.join(', ') || '', description: l.detailedContent }));
 
 // Fetch Resume Experience
 let resumeData = null;
@@ -49,7 +51,7 @@ const groupLabsByMonth = (labs: typeof recentLabs) => {
   });
   return groups;
 };
-const labGroups = groupLabsByMonth(recentLabs);
+
 const now = new Date();
 const monthLabel = now.toLocaleString('en-US', { month: 'long' }) + ' ' + now.getFullYear();
 

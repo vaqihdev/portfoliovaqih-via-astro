@@ -3,13 +3,18 @@ export const prerender = false;
 
 import '../../assets/global.css';
 import { db } from '../../db';
-import { projectsLabs, landingMetadata, capabilities, resumeProfile, atsResumes } from '../../db/schema';
+import { engineeringAssets, landingMetadata, capabilities, resumeProfile, atsResumes } from '../../db/schema';
 import { desc, asc } from 'drizzle-orm';
 
-const projects = await db.select().from(projectsLabs).orderBy(desc(projectsLabs.id)).catch(() => []);
+const dbProjects = await db.select().from(engineeringAssets).orderBy(desc(engineeringAssets.id)).catch(() => []);
+const projects = dbProjects.map(p => ({
+  ...p,
+  tools: (p.technologyStack as string[])?.join(', ') || '',
+  description: p.detailedContent
+}));
 const liveDbMetadata = await db.select().from(landingMetadata).limit(1).then(res => res[0]).catch(() => null);
 const allCaps = await db.select().from(capabilities).orderBy(asc(capabilities.orderIndex)).catch(() => []);
-const resumeData = await db.select().from(resumeProfile).limit(1).then(res => res[0]).catch(() => null);
+
 const allAtsResumes = await db.select().from(atsResumes).orderBy(desc(atsResumes.updatedAt)).catch(() => []);
 
 type CapItem = typeof allCaps[number];
@@ -150,6 +155,38 @@ const groupedCaps = allCaps.reduce((acc: Record<string, CapItem[]>, cap: CapItem
                 <span class="text-[10px] font-bold tracking-widest text-slate-400 uppercase font-mono">// DOMAIN_DETAILED_DESCRIPTION</span>
                 <textarea name="description" id="form-description" rows="6" placeholder="Paste or type extensive execution description details..." class="w-full px-3 py-2 border border-slate-200 bg-slate-50/50 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 resize-y" required></textarea>
               </div>
+
+              <details class="group border border-slate-200 rounded-lg bg-slate-50/30 overflow-hidden">
+                <summary class="text-xs font-mono font-bold tracking-widest uppercase text-slate-500 cursor-pointer p-4 select-none hover:bg-slate-50/50 transition-colors">
+                  [+] Advanced Engineering Metadata
+                </summary>
+                <div class="p-4 pt-0 grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-200">
+                  <div class="flex flex-col gap-1">
+                    <span class="text-[10px] font-bold tracking-widest text-slate-400 uppercase font-mono">// STATUS</span>
+                    <select name="status" id="form-status" class="w-full px-3 py-2 border border-slate-200 bg-slate-50/50 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500">
+                      <option value="Completed">Completed</option>
+                      <option value="Production">Production</option>
+                      <option value="Draft">Draft</option>
+                    </select>
+                  </div>
+                  <div class="flex flex-col gap-1">
+                    <span class="text-[10px] font-bold tracking-widest text-slate-400 uppercase font-mono">// DIFFICULTY</span>
+                    <select name="difficulty" id="form-difficulty" class="w-full px-3 py-2 border border-slate-200 bg-slate-50/50 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500">
+                      <option value="Beginner">Beginner</option>
+                      <option value="Intermediate" selected>Intermediate</option>
+                      <option value="Advanced">Advanced</option>
+                    </select>
+                  </div>
+                  <div class="flex flex-col gap-1">
+                    <span class="text-[10px] font-bold tracking-widest text-slate-400 uppercase font-mono">// CLOUD_PROVIDER</span>
+                    <input type="text" name="cloudProvider" id="form-cloud-provider" placeholder="e.g., AWS, GCP, Vercel" class="w-full px-3 py-2 border border-slate-200 bg-slate-50/50 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500" />
+                  </div>
+                  <div class="flex flex-col gap-1">
+                    <span class="text-[10px] font-bold tracking-widest text-slate-400 uppercase font-mono">// OPERATING_SYSTEM</span>
+                    <input type="text" name="operatingSystem" id="form-os" placeholder="e.g., Linux, MacOS" class="w-full px-3 py-2 border border-slate-200 bg-slate-50/50 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500" />
+                  </div>
+                </div>
+              </details>
               <div class="flex items-center gap-2 py-1 select-none">
                 <input type="checkbox" name="isFeatured" id="form-is-featured" class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500/10 cursor-pointer" />
                 <label for="form-is-featured" class="text-[10px] font-mono font-bold tracking-wide text-slate-500 uppercase cursor-pointer">// PROVIDE AS FEATURED PORTFOLIO NODE</label>
@@ -206,7 +243,7 @@ const groupedCaps = allCaps.reduce((acc: Record<string, CapItem[]>, cap: CapItem
         </div>
 
         
-<div id="panel-logs" class="hidden flex flex-col gap-8 w-full">
+        <div id="panel-logs" class="hidden flex flex-col gap-8 w-full">
           <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
             <div class="flex flex-col gap-1">
               <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Engineering Logs</h2>
@@ -574,7 +611,11 @@ const groupedCaps = allCaps.reduce((acc: Record<string, CapItem[]>, cap: CapItem
               type: document.getElementById('form-type').value,
               tools: document.getElementById('form-tools').value.trim(),
               description: document.getElementById('form-description').value.trim(),
-              isFeatured: document.getElementById('form-is-featured').checked
+              isFeatured: document.getElementById('form-is-featured').checked,
+              status: document.getElementById('form-status')?.value || 'Completed',
+              difficulty: document.getElementById('form-difficulty')?.value || 'Intermediate',
+              cloudProvider: document.getElementById('form-cloud-provider')?.value || 'Unknown',
+              operatingSystem: document.getElementById('form-os')?.value || 'Linux'
             };
 
             try {
