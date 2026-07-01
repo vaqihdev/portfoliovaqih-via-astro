@@ -3,6 +3,7 @@ const { title } = Astro.props;
 import '../assets/global.css';
 import Footer from '../components/Footer.astro';
 import LoadingScreen from '../components/LoadingScreen.astro';
+import { CustomCursor } from '../components/CustomCursor.tsx';
 ---
 
 <!doctype html>
@@ -21,5 +22,6 @@ import LoadingScreen from '../components/LoadingScreen.astro';
 			<slot />
 		</div>
 		<Footer />
+		<CustomCursor client:load />
 	</body>
 </html>

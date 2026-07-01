@@ -172,6 +172,7 @@
           // Fully remove from view after fade animation concludes
           setTimeout(() => {
             loader.style.display = 'none';
+            document.body.classList.add('loader-finished');
           }, 700);
         }, 500);
       }

@@ -105,33 +105,46 @@ app.put('/landing-metadata', async (c) => {
   try {
     const body = await c.req.json();
     
-    // Attempt to update the single row
-    const existing = await db.select().from(landingMetadata).limit(1);
-    if (existing.length > 0) {
-      await db.update(landingMetadata).set({
-        heroFirstName: body.heroFirstName,
-        heroLastName: body.heroLastName,
-        heroSubtitle: body.heroSubtitle,
-        heroShortBio: body.heroShortBio,
-        aboutHeading: body.aboutHeading,
-        aboutLongDesc: body.aboutLongDesc,
-        coreDomains: body.coreDomains
-      }).where(eq(landingMetadata.id, existing[0].id));
-    } else {
-      await db.insert(landingMetadata).values({
-        heroFirstName: body.heroFirstName,
-        heroLastName: body.heroLastName,
-        heroSubtitle: body.heroSubtitle,
-        heroShortBio: body.heroShortBio,
-        aboutHeading: body.aboutHeading,
-        aboutLongDesc: body.aboutLongDesc,
-        coreDomains: body.coreDomains
-      });
-    }
+    // Retry logic for Neon serverless cold starts
+    const attemptUpdate = async (retries = 3): Promise<void> => {
+      try {
+        const existing = await db.select().from(landingMetadata).limit(1);
+        if (existing.length > 0) {
+          await db.update(landingMetadata).set({
+            heroFirstName: body.heroFirstName,
+            heroLastName: body.heroLastName,
+            heroSubtitle: body.heroSubtitle,
+            heroShortBio: body.heroShortBio,
+            aboutHeading: body.aboutHeading,
+            aboutLongDesc: body.aboutLongDesc,
+            coreDomains: body.coreDomains
+          }).where(eq(landingMetadata.id, existing[0].id));
+        } else {
+          await db.insert(landingMetadata).values({
+            heroFirstName: body.heroFirstName,
+            heroLastName: body.heroLastName,
+            heroSubtitle: body.heroSubtitle,
+            heroShortBio: body.heroShortBio,
+            aboutHeading: body.aboutHeading,
+            aboutLongDesc: body.aboutLongDesc,
+            coreDomains: body.coreDomains
+          });
+        }
+      } catch (err: any) {
+        if (retries > 0) {
+          console.log(`Database query failed, retrying... (${retries} left)`);
+          await new Promise(r => setTimeout(r, 1000));
+          return attemptUpdate(retries - 1);
+        }
+        throw err;
+      }
+    };
+
+    await attemptUpdate();
     return c.json({ success: true });
-  } catch (err) {
+  } catch (err: any) {
     console.error('Update failed error:', err);
-    return c.json({ success: false, message: 'Update failed' }, 500);
+    return c.json({ success: false, message: 'Database connection failed. Please try again.', error: err.message || err.toString() }, 500);
   }
 });
 
