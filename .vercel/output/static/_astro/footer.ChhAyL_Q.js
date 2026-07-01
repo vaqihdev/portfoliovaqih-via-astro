@@ -1,1 +1,0 @@
-import{t as e}from"./footer.BUOjD1RX.js";export{e as Footer};
