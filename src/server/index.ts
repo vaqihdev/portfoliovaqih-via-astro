@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { setCookie, deleteCookie } from 'hono/cookie';
 import { db } from '../db/index';
-import { projectsLabs, capabilities, landingMetadata } from '../db/schema';
+import { projectsLabs, capabilities, landingMetadata, atsResumes } from '../db/schema';
 import { eq, asc } from 'drizzle-orm';
 
 const app = new Hono().basePath('/api');
@@ -45,9 +45,9 @@ app.get('/capabilities', async (c) => {
   }
 });
 
-app.post('/logout', (c) => {
+app.get('/logout', (c) => {
   deleteCookie(c, 'admin_session', { path: '/' });
-  return c.json({ success: true });
+  return c.redirect('/');
 });
 
 app.post('/projects-labs', async (c) => {
@@ -133,6 +133,90 @@ app.put('/landing-metadata', async (c) => {
     console.error('Update failed error:', err);
     return c.json({ success: false, message: 'Update failed' }, 500);
   }
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/contributions
+// Aggregates all CMS content by creation date to power the heatmap.
+// Each table query is independent — one failure won't break the whole response.
+// To add a new table in the future: query it below and merge into `heatmap`.
+// ---------------------------------------------------------------------------
+app.get('/contributions', async (c) => {
+  type HeatmapEntry = { type: string; title: string };
+  const heatmap: Record<string, HeatmapEntry[]> = {};
+  let totalProjects = 0, totalLabs = 0, totalResumes = 0;
+
+  const toDateKey = (raw: Date | string | null | undefined): string | null => {
+    if (!raw) return null;
+    const d = raw instanceof Date ? raw : new Date(raw as string);
+    if (isNaN(d.getTime())) return null;
+    const yyyy = d.getUTCFullYear();
+    const mm   = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const dd   = String(d.getUTCDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const addEntry = (dateKey: string | null, entry: HeatmapEntry) => {
+    if (!dateKey) return;
+    if (!heatmap[dateKey]) heatmap[dateKey] = [];
+    heatmap[dateKey].push(entry);
+  };
+
+  // 1. projectsLabs — Projects, Labs, Blogs
+  try {
+    const plRows = await db
+      .select({ id: projectsLabs.id, title: projectsLabs.title, type: projectsLabs.type, createdAt: projectsLabs.createdAt })
+      .from(projectsLabs)
+      .orderBy(asc(projectsLabs.id));
+
+    for (const row of plRows) {
+      const key = toDateKey(row.createdAt);
+      const rowType = row.type?.toUpperCase();
+      if (rowType === 'LAB') {
+        totalLabs++;
+        addEntry(key, { type: 'Lab', title: row.title });
+      } else {
+        totalProjects++;
+        addEntry(key, { type: 'Project', title: row.title });
+      }
+    }
+  } catch (err) {
+    console.error('[contributions] projectsLabs query failed:', err);
+    // Continue — don't abort the whole response
+  }
+
+  // 2. atsResumes — independent query, won't break if it fails
+  try {
+    const resumeRows = await db
+      .select({ id: atsResumes.id, title: atsResumes.title, createdAt: atsResumes.createdAt, updatedAt: atsResumes.updatedAt })
+      .from(atsResumes)
+      .orderBy(asc(atsResumes.id));
+
+    for (const row of resumeRows) {
+      // Try createdAt first, fall back to updatedAt
+      const key = toDateKey(row.createdAt) ?? toDateKey(row.updatedAt);
+      totalResumes++;
+      addEntry(key, { type: 'Resume', title: row.title || 'Untitled Resume' });
+    }
+  } catch (err) {
+    console.error('[contributions] atsResumes query failed:', err);
+    // Continue — projectsLabs data is still valid
+  }
+
+  const allDates = Object.keys(heatmap).sort();
+  const lastUpdated = allDates.length > 0 ? allDates[allDates.length - 1] : null;
+
+  return c.json({
+    success: true,
+    heatmap,
+    stats: {
+      totalProjects,
+      totalLabs,
+      totalResumes,
+      totalPublished: totalProjects + totalLabs + totalResumes,
+      lastUpdated,
+    },
+  });
 });
 
 export default app;

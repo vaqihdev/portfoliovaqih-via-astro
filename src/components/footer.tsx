@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 const navLinks = [
 	{ href: "/", label: "Home" },
 	{ href: "/projects", label: "Projects" },
-	{ href: "/blog", label: "Blog" },
+	{ href: "/labs", label: "Labs" },
 	{ href: "/resume", label: "Resume" },
 ];
 
@@ -31,33 +31,34 @@ const socialLinks = [
 
 export function Footer() {
 	return (
-		<footer className="mx-auto max-w-5xl *:px-4 *:md:px-6 w-full">
-			<div className="flex flex-col gap-6 py-6">
-				<div className="flex items-center justify-between">
-					<div className="flex items-center gap-2">
-						<Logo className="h-4.5" />
+		<footer className="w-full border-t border-slate-200 bg-white/90">
+			<div className="mx-auto max-w-7xl px-4 sm:px-6 w-full">
+				<div className="flex flex-col gap-6 py-6">
+					<div className="flex items-center justify-between">
+						<div className="flex items-center gap-2">
+							<Logo className="h-4.5" />
+						</div>
+						<div className="flex items-center">
+							{socialLinks.map(({ href, label, icon }) => (
+								<Button key={label} size="icon" variant="ghost" render={<a aria-label={label} href={href} target="_blank" rel="noopener noreferrer" />} nativeButton={false}>{icon}</Button>
+							))}
+						</div>
 					</div>
-					<div className="flex items-center">
-						{socialLinks.map(({ href, label, icon }) => (
-							<Button key={label} size="icon" variant="ghost" render={<a aria-label={label} href={href} target="_blank" rel="noopener noreferrer" />} nativeButton={false}>{icon}</Button>
-						))}
-					</div>
+
+					<nav>
+						<ul className="flex flex-wrap gap-4 font-medium text-muted-foreground text-sm md:gap-6">
+							{navLinks.map((link) => (
+								<li key={link.label}>
+									<a className="hover:text-foreground" href={link.href}>
+										{link.label}
+									</a>
+								</li>
+							))}
+						</ul>
+					</nav>
 				</div>
 
-				<nav>
-					<ul className="flex flex-wrap gap-4 font-medium text-muted-foreground text-sm md:gap-6">
-						{navLinks.map((link) => (
-							<li key={link.label}>
-								<a className="hover:text-foreground" href={link.href}>
-									{link.label}
-								</a>
-							</li>
-						))}
-					</ul>
-				</nav>
-			</div>
-
-			<div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t py-4 text-muted-foreground text-sm">
+				<div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4 text-muted-foreground text-sm">
 				<p>&copy; {new Date().getFullYear()} Muchamad Ghufron Vaqih. All rights reserved.</p>
 
 				<p className="inline-flex items-center gap-1">
@@ -79,6 +80,7 @@ export function Footer() {
 						vaqihdev
 					</a>
 				</p>
+				</div>
 			</div>
 		</footer>
 	);

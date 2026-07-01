@@ -1,4 +1,4 @@
-import { pgTable, serial, text, varchar, boolean, integer, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, varchar, boolean, integer, jsonb, timestamp } from 'drizzle-orm/pg-core';
 
 export const landingMetadata = pgTable('landing_metadata', {
   id: serial('id').primaryKey(),
@@ -18,6 +18,7 @@ export const projectsLabs = pgTable('projects_labs', {
   tools: text('tools').notNull(),
   description: text('description').notNull(),
   isFeatured: boolean('is_featured').default(false).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
 export const capabilities = pgTable('capabilities', {

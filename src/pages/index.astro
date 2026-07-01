@@ -3,15 +3,16 @@ export const prerender = false;
 
 import Layout from '../layouts/Layout.astro';
 import Navbar from '../components/Navbar.astro';
+import ContributionHeatmap from '../components/ContributionHeatmap';
 import { db } from '../db';
 import { landingMetadata, projectsLabs, capabilities, atsResumes } from '../db/schema';
-import { eq, desc, not } from 'drizzle-orm';
+import { eq, desc, not, inArray, or } from 'drizzle-orm';
 
 // Fetch Live Data
 const siteMeta = await db.select().from(landingMetadata).limit(1).then(res => res[0]).catch(() => null);
-const featuredProjects = (await db.select().from(projectsLabs).where(not(eq(projectsLabs.type, 'Blog'))).orderBy(desc(projectsLabs.id)).catch(() => [])) as any[];
+const featuredProjects = (await db.select().from(projectsLabs).where(eq(projectsLabs.type, 'Project')).orderBy(desc(projectsLabs.id)).catch(() => [])) as any[];
 const allCaps = (await db.select().from(capabilities).orderBy(capabilities.orderIndex).catch(() => [])) as any[];
-const recentBlogs = (await db.select().from(projectsLabs).where(eq(projectsLabs.type, 'Blog')).orderBy(desc(projectsLabs.id)).limit(5).catch(() => [])) as any[];
+const recentLabs = (await db.select().from(projectsLabs).where(inArray(projectsLabs.type, ['Lab', 'Blog'])).orderBy(desc(projectsLabs.id)).limit(5).catch(() => [])) as any[];
 
 // Fetch Resume Experience
 let resumeData = null;
@@ -22,17 +23,17 @@ try {
   console.error("Database connection error in index.astro:", error);
 }
 
-// Group blogs by month
-const groupBlogsByMonth = (blogs: typeof recentBlogs) => {
-  const groups: Record<string, typeof recentBlogs> = {};
-  blogs.forEach(blog => {
+// Group labs by month
+const groupLabsByMonth = (labs: typeof recentLabs) => {
+  const groups: Record<string, typeof recentLabs> = {};
+  labs.forEach(lab => {
     const key = 'Recent';
     if (!groups[key]) groups[key] = [];
-    groups[key].push(blog);
+    groups[key].push(lab);
   });
   return groups;
 };
-const blogGroups = groupBlogsByMonth(recentBlogs);
+const labGroups = groupLabsByMonth(recentLabs);
 const now = new Date();
 const monthLabel = now.toLocaleString('en-US', { month: 'long' }) + ' ' + now.getFullYear();
 
@@ -302,8 +303,15 @@ const isDefaultName = firstName === "Muchamad" && lastName === "Ghufron Vaqih";
     </div>
   </section>
 
+  <!-- SECTION 4.5: Contribution Heatmap -->
+  <section class="w-full py-12 border-t border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-6">
+      <ContributionHeatmap client:load />
+    </div>
+  </section>
+
   <!-- SECTION 5: Featured Engineering Projects -->
-  <section class="w-full py-24 relative">
+  <section class="w-full py-24 border-t border-slate-100 relative overflow-hidden">
     <div class="max-w-7xl mx-auto px-6 flex flex-col relative z-10">
       
       <div class="flex items-end justify-between mb-10">
@@ -485,14 +493,14 @@ const isDefaultName = firstName === "Muchamad" && lastName === "Ghufron Vaqih";
       }
     });
   </script>
-  <!-- SECTION: Blog Activity Timeline -->
-  {recentBlogs.length > 0 && (
-  <section class="w-full bg-white border-t border-slate-100 py-24">
-    <div class="max-w-7xl mx-auto px-6">
+  <!-- SECTION: Labs Activity Timeline -->
+  {recentLabs.length > 0 && (
+  <section class="w-full py-24 border-t border-slate-100 relative overflow-hidden">
+    <div class="max-w-7xl mx-auto px-6 relative z-10">
       
       <div class="flex flex-col items-center text-center mb-16">
         <span class="text-[10px] font-bold text-blue-600 font-mono tracking-widest uppercase mb-4">// WRITE_LOG</span>
-        <h3 class="text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">Technical Write-ups</h3>
+        <h3 class="text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">Engineering Labs</h3>
         <p class="text-sm text-slate-500 mt-3 max-w-md font-sans">Cloud architecture breakdowns, deployment post-mortems, and engineering insights.</p>
       </div>
 
@@ -521,26 +529,26 @@ const isDefaultName = firstName === "Muchamad" && lastName === "Ghufron Vaqih";
               <!-- Content -->
               <div class="flex-1 min-w-0 pt-1">
                 <p class="text-sm font-semibold text-slate-700 mb-3 font-sans">
-                  Published {recentBlogs.length} write-up{recentBlogs.length > 1 ? 's' : ''}
+                  Published {recentLabs.length} lab{recentLabs.length > 1 ? 's' : ''}
                 </p>
                 <div class="flex flex-col gap-2.5">
-                  {recentBlogs.map((blog, idx) => {
+                  {recentLabs.map((lab, idx) => {
                     const barWidths = [100, 80, 80, 20, 50];
                     const w = barWidths[idx % barWidths.length];
                     return (
                     <div class="flex items-center justify-between gap-4 group">
-                      <div class="flex items-center gap-2 min-w-0">
-                        <a href={`/blog/${blog.id}`} class="text-sm text-blue-600 hover:underline font-mono font-medium truncate">
-                          vaqihdev/{blog.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').substring(0, 40)}
+                      <div class="flex items-center gap-2 min-w-0 flex-1">
+                        <a href={`/labs/${lab.id}`} class="text-sm text-blue-600 hover:underline font-mono font-medium truncate min-w-0 max-w-[200px] sm:max-w-none">
+                          vaqihdev/{lab.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').substring(0, 30)}
                         </a>
-                        {blog.tools && (
-                          <span class="text-[10px] text-slate-400 font-mono shrink-0">
-                            {blog.tools.split(',')[0].trim()}
+                        {lab.tools && (
+                          <span class="text-[10px] text-slate-400 font-mono shrink-0 hidden sm:inline">
+                            {lab.tools.split(',')[0].trim()}
                           </span>
                         )}
                       </div>
                       <!-- Activity bar like GitHub -->
-                      <div class="w-20 shrink-0 h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div class="w-16 sm:w-20 shrink-0 h-2.5 bg-slate-100 rounded-full overflow-hidden">
                         <div class="h-full bg-green-500 rounded-full" style={`width: ${w}%`}></div>
                       </div>
                     </div>
@@ -554,7 +562,7 @@ const isDefaultName = firstName === "Muchamad" && lastName === "Ghufron Vaqih";
 
         <!-- View All Link -->
         <div class="mt-4 flex justify-center">
-          <a href="/blog" class="inline-flex items-center gap-2 px-5 py-2.5 border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-600 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-all">
+          <a href="/labs" class="inline-flex items-center gap-2 px-5 py-2.5 border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-600 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-all">
             VIEW ALL WRITE-UPS
             <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M6.22 3.22a.75.75 0 011.06 0l4.25 4.25a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 01-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 010-1.06z"></path></svg>
           </a>

@@ -7,10 +7,10 @@ import { db } from '../db/index';
 import { projectsLabs } from '../db/schema';
 import { desc } from 'drizzle-orm';
 
-let allProjects: typeof projectsLabs.$inferSelect[] = [];
+let publishedLabs: typeof projectsLabs.$inferSelect[] = [];
 try {
-  const dbProjects = await db.select().from(projectsLabs).orderBy(desc(projectsLabs.id));
-  allProjects = dbProjects.filter(p => p.type === 'Project');
+  publishedLabs = await db.select().from(projectsLabs).orderBy(desc(projectsLabs.id));
+  publishedLabs = publishedLabs.filter(p => p.type === 'Lab' || p.type === 'Blog');
 } catch (error) {
   console.error("Database connection error:", error);
 }
@@ -23,11 +23,11 @@ const cleanDescription = (text: string | null) => {
 
 // Extract unique categories from tools
 const uniqueCategories = Array.from(new Set(
-  allProjects.flatMap(project => (project.tools ? project.tools.split(',').map(t => t.trim()) : []))
+  publishedLabs.flatMap(lab => (lab.tools ? lab.tools.split(',').map(t => t.trim()) : []))
 )).filter(Boolean).sort();
 ---
 
-<BaseLayout title="Projects Vault | Developer Portfolio">
+<BaseLayout title="Labs | Developer Portfolio">
   <Navbar />
   
   <main class="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-14 md:py-24 flex flex-col lg:flex-row gap-10 sm:gap-12 items-start">
@@ -35,9 +35,9 @@ const uniqueCategories = Array.from(new Set(
     {/* LEFT SIDEBAR */}
     <aside class="w-full lg:w-1/4 lg:sticky lg:top-24 flex flex-col gap-8 shrink-0">
       <div>
-        <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-3">Projects Vault</h1>
+        <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-3">Cloud Engineering Labs</h1>
         <p class="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
-          A historical index of verified system architecture implementations, automation environments, and experimental nodes.
+          Hands-on AWS labs, cloud experiments, infrastructure deployments, DevOps practice, and engineering exercises completed throughout my learning journey.
         </p>
       </div>
 
@@ -46,7 +46,7 @@ const uniqueCategories = Array.from(new Set(
         
         <div class="flex lg:flex-col overflow-x-auto lg:overflow-visible gap-2 pb-2 lg:pb-0 hide-scrollbar" id="category-filters">
           <button class="category-btn active whitespace-nowrap lg:whitespace-normal text-left px-3 py-2 text-sm font-medium rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 transition-colors" data-category="all">
-            All Projects
+            All Labs
           </button>
           {uniqueCategories.map(category => (
             <button class="category-btn whitespace-nowrap lg:whitespace-normal text-left px-3 py-2 text-sm font-medium rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" data-category={category.toLowerCase()}>
@@ -59,21 +59,21 @@ const uniqueCategories = Array.from(new Set(
 
     {/* RIGHT CONTENT */}
     <div class="w-full lg:w-3/4 flex flex-col min-h-[50vh]">
-      {allProjects.length > 0 ? (
+      {publishedLabs.length > 0 ? (
         <>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="projects-grid">
-            {allProjects.map(project => {
-              const projectCategories = (project.tools ? project.tools.split(',').map(t => t.trim().toLowerCase()) : []);
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="labs-grid">
+            {publishedLabs.map(lab => {
+              const labCategories = (lab.tools ? lab.tools.split(',').map(t => t.trim().toLowerCase()) : []);
               const dateOptions: Intl.DateTimeFormatOptions = { month: 'long', year: 'numeric' };
-              const formattedDate = project.createdAt ? new Date(project.createdAt).toLocaleDateString('en-US', dateOptions) : 'Unknown Date';
+              const formattedDate = lab.createdAt ? new Date(lab.createdAt).toLocaleDateString('en-US', dateOptions) : 'Unknown Date';
               
               return (
-                <div class="project-card group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-300 flex flex-col h-full" data-categories={projectCategories.join(',')}>
+                <div class="lab-card group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-300 flex flex-col h-full" data-categories={labCategories.join(',')}>
                   <div class="p-6 flex flex-col flex-grow">
                     
                     {/* Header */}
                     <div class="flex items-center gap-2 mb-3 flex-wrap">
-                      {(project.tools ? project.tools.split(',') : []).slice(0, 2).map(tag => (
+                      {(lab.tools ? lab.tools.split(',') : []).slice(0, 2).map(tag => (
                         <span class="text-[10px] font-mono font-bold tracking-widest text-blue-600 dark:text-blue-400 uppercase bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-sm">
                           {tag.trim()}
                         </span>
@@ -81,23 +81,23 @@ const uniqueCategories = Array.from(new Set(
                     </div>
 
                     <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-2 leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                      {project.title}
+                      {lab.title}
                     </h2>
                     
                     <p class="text-sm text-slate-600 dark:text-slate-400 mb-5 line-clamp-3 leading-relaxed">
-                      {cleanDescription(project.description).text}
+                      {cleanDescription(lab.description).text}
                     </p>
 
                     <div class="mt-auto flex flex-col gap-3">
-                      {project.tools && (
+                      {lab.tools && (
                         <div class="text-xs text-slate-500 font-mono flex items-start gap-2">
                           <span class="text-slate-400 uppercase tracking-widest text-[9px] mt-0.5">Stack</span>
-                          <span class="flex-1 leading-relaxed text-slate-700 dark:text-slate-300">{project.tools}</span>
+                          <span class="flex-1 leading-relaxed text-slate-700 dark:text-slate-300">{lab.tools}</span>
                         </div>
                       )}
                       <div class="flex items-center justify-between text-xs text-slate-500 font-mono border-t border-slate-100 dark:border-slate-800 pt-3 mt-1">
                         <div class="flex flex-col gap-1">
-                          <span>Status: <span class="text-slate-700 dark:text-slate-300 font-semibold">Public</span></span>
+                          <span>Difficulty: <span class="text-slate-700 dark:text-slate-300 font-semibold">Intermediate</span></span>
                           <span>Completed: <span class="text-slate-700 dark:text-slate-300">{formattedDate}</span></span>
                         </div>
                       </div>
@@ -105,8 +105,8 @@ const uniqueCategories = Array.from(new Set(
                   </div>
                   
                   {/* Action Bar */}
-                  <a href={`/projects/${project.id}`} class="block w-full border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-3 text-center text-sm font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500 transition-colors flex items-center justify-center gap-2">
-                    View Project <span>&rarr;</span>
+                  <a href={`/labs/${lab.id}`} class="block w-full border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-3 text-center text-sm font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500 transition-colors flex items-center justify-center gap-2">
+                    View Lab <span>&rarr;</span>
                   </a>
                 </div>
               );
@@ -114,12 +114,12 @@ const uniqueCategories = Array.from(new Set(
           </div>
           
           <div id="empty-state" class="hidden text-center py-20 text-slate-500 font-mono text-sm border border-dashed border-slate-300 dark:border-slate-700 rounded-xl">
-            No Projects available in this category yet.
+            No Labs available in this category yet.
           </div>
         </>
       ) : (
         <div class="text-center py-20 text-slate-500 font-mono text-sm border border-dashed border-slate-300 dark:border-slate-700 rounded-xl">
-          Repository list is empty.
+          No published labs found in the database.
         </div>
       )}
     </div>
@@ -129,7 +129,7 @@ const uniqueCategories = Array.from(new Set(
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const filterBtns = document.querySelectorAll('.category-btn');
-    const projectCards = document.querySelectorAll('.project-card');
+    const labCards = document.querySelectorAll('.lab-card');
     const emptyState = document.getElementById('empty-state');
 
     filterBtns.forEach(btn => {
@@ -147,7 +147,7 @@ const uniqueCategories = Array.from(new Set(
         const category = btn.getAttribute('data-category');
         let visibleCount = 0;
 
-        projectCards.forEach(card => {
+        labCards.forEach(card => {
           const categories = card.getAttribute('data-categories') || '';
           const categoryArray = categories.split(',');
 

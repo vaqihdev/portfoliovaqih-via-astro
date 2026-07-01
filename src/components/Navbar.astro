@@ -1,16 +1,122 @@
 ---
 import Logo from './Logo.astro';
 ---
-<header class="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-950/90 backdrop-blur-md">
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-    <a href="/" class="hover:opacity-80 transition-opacity flex items-center gap-2">
+<header class="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/90 backdrop-blur-md">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+    <!-- Logo -->
+    <a href="/" class="hover:opacity-80 transition-opacity flex items-center gap-2 flex-shrink-0">
       <Logo />
     </a>
-    <nav class="hidden md:flex space-x-8 text-sm font-semibold tracking-wide text-slate-500 dark:text-slate-400">
-      <a href="/" class="text-blue-600 dark:text-blue-500 border-b-2 border-blue-600 pb-1 -mb-[18px]">Home</a>
-      <a href="/projects" class="hover:text-slate-900 dark:hover:text-white transition-colors pb-1">Projects</a>
-      <a href="/blog" class="hover:text-slate-900 dark:hover:text-white transition-colors pb-1">Blog</a>
-      <a href="/resume" class="hover:text-slate-900 dark:hover:text-white transition-colors pb-1">Resume</a>
+
+    <!-- Desktop Nav -->
+    <nav class="hidden md:flex space-x-8 text-sm font-semibold tracking-wide text-slate-500" id="desktop-nav">
+      <a href="/" class="nav-link pb-1 transition-colors hover:text-slate-900" data-path="/">Home</a>
+      <a href="/projects" class="nav-link pb-1 transition-colors hover:text-slate-900" data-path="/projects">Projects</a>
+      <a href="/labs" class="nav-link pb-1 transition-colors hover:text-slate-900" data-path="/labs">Labs</a>
+      <a href="/resume" class="nav-link pb-1 transition-colors hover:text-slate-900" data-path="/resume">Resume</a>
+    </nav>
+
+    <!-- Hamburger Button (mobile only) -->
+    <button
+      id="mobile-menu-btn"
+      class="md:hidden flex flex-col justify-center items-center w-10 h-10 rounded-lg hover:bg-slate-100 transition-colors gap-1.5"
+      aria-label="Toggle menu"
+      aria-expanded="false"
+    >
+      <span class="ham-line block w-5 h-0.5 bg-slate-700 rounded-full transition-all duration-300"></span>
+      <span class="ham-line block w-5 h-0.5 bg-slate-700 rounded-full transition-all duration-300"></span>
+      <span class="ham-line block w-5 h-0.5 bg-slate-700 rounded-full transition-all duration-300"></span>
+    </button>
+  </div>
+
+  <!-- Mobile Menu Panel -->
+  <div
+    id="mobile-menu"
+    class="md:hidden hidden border-t border-slate-100 bg-white/95 backdrop-blur-md"
+  >
+    <nav class="max-w-7xl mx-auto px-6 py-4 flex flex-col gap-1">
+      <a href="/" class="mobile-nav-link flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors" data-path="/">
+        <span class="w-1.5 h-1.5 rounded-full bg-blue-600 opacity-0 mobile-dot"></span>
+        Home
+      </a>
+      <a href="/projects" class="mobile-nav-link flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors" data-path="/projects">
+        <span class="w-1.5 h-1.5 rounded-full bg-blue-600 opacity-0 mobile-dot"></span>
+        Projects
+      </a>
+      <a href="/labs" class="mobile-nav-link flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors" data-path="/labs">
+        <span class="w-1.5 h-1.5 rounded-full bg-blue-600 opacity-0 mobile-dot"></span>
+        Labs
+      </a>
+      <a href="/resume" class="mobile-nav-link flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors" data-path="/resume">
+        <span class="w-1.5 h-1.5 rounded-full bg-blue-600 opacity-0 mobile-dot"></span>
+        Resume
+      </a>
     </nav>
   </div>
 </header>
+<script is:inline>
+  (function () {
+    const btn       = document.getElementById('mobile-menu-btn');
+    const menu      = document.getElementById('mobile-menu');
+    const lines     = document.querySelectorAll('.ham-line');
+    const path      = window.location.pathname.replace(/\/$/, '') || '/';
+
+    // Highlight active link — desktop
+    document.querySelectorAll('.nav-link').forEach(link => {
+      const lp = link.getAttribute('data-path').replace(/\/$/, '') || '/';
+      const active = path === lp || (lp !== '/' && path.startsWith(lp));
+      if (active) {
+        link.classList.add('text-blue-600', 'border-b-2', 'border-blue-600', '-mb-[18px]');
+        link.classList.remove('text-slate-500');
+      }
+    });
+
+    // Highlight active link — mobile
+    document.querySelectorAll('.mobile-nav-link').forEach(link => {
+      const lp = link.getAttribute('data-path').replace(/\/$/, '') || '/';
+      const active = path === lp || (lp !== '/' && path.startsWith(lp));
+      if (active) {
+        link.classList.add('bg-blue-50', 'text-blue-600');
+        link.classList.remove('text-slate-600');
+        link.querySelector('.mobile-dot')?.classList.remove('opacity-0');
+        link.querySelector('.mobile-dot')?.classList.add('opacity-100');
+      }
+    });
+
+    if (!btn || !menu) return;
+
+    let open = false;
+
+    function toggleMenu() {
+      open = !open;
+      btn.setAttribute('aria-expanded', String(open));
+
+      if (open) {
+        menu.classList.remove('hidden');
+        // Animate hamburger → X
+        lines[0].style.transform = 'translateY(8px) rotate(45deg)';
+        lines[1].style.opacity   = '0';
+        lines[2].style.transform = 'translateY(-8px) rotate(-45deg)';
+      } else {
+        menu.classList.add('hidden');
+        lines[0].style.transform = '';
+        lines[1].style.opacity   = '';
+        lines[2].style.transform = '';
+      }
+    }
+
+    btn.addEventListener('click', toggleMenu);
+
+    // Close when clicking a link
+    menu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+      if (open) toggleMenu();
+    }));
+
+    // Close when clicking outside
+    document.addEventListener('click', (e) => {
+      if (open && !btn.contains(e.target) && !menu.contains(e.target)) {
+        toggleMenu();
+      }
+    });
+  })();
+</script>

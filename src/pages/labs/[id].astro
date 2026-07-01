@@ -10,48 +10,48 @@ import { marked } from 'marked';
 
 const { id } = Astro.params;
 
-let project = null;
+let lab = null;
 try {
-  const result = await db.select().from(projectsLabs).where(and(eq(projectsLabs.id, Number(id)), eq(projectsLabs.type, 'Project'))).limit(1);
+  const result = await db.select().from(projectsLabs).where(and(eq(projectsLabs.id, Number(id)), eq(projectsLabs.type, 'Lab'))).limit(1);
   if (result.length > 0) {
-    project = result[0];
+    lab = result[0];
   }
 } catch (e) {
-  console.error("Error fetching project:", e);
+  console.error("Error fetching lab:", e);
 }
 
-if (!project) {
+if (!lab) {
   return Astro.redirect('/404');
 }
 
 // Convert markdown to HTML
-const htmlContent = marked.parse(project.description);
+const htmlContent = marked.parse(lab.description);
 ---
 
-<Layout title={`${project.title} | Projects Vault`}>
+<Layout title={`${lab.title} | Engineering Labs`}>
   <Navbar />
   
   <main class="w-full max-w-4xl mx-auto px-6 py-24 flex flex-col gap-10 min-h-[80vh] relative z-10">
     <div class="flex items-center gap-2 text-sm text-slate-500 mb-2 font-mono">
-      <a href="/projects" class="hover:text-blue-600 hover:underline">Projects</a>
+      <a href="/labs" class="hover:text-blue-600 hover:underline">Labs</a>
       <span>/</span>
-      <span class="text-slate-900 font-semibold">{project.title}</span>
+      <span class="text-slate-900 font-semibold">{lab.title}</span>
     </div>
 
     <div class="bg-white border border-slate-300 rounded-lg shadow-sm overflow-hidden">
       <div class="border-b border-slate-200 bg-slate-50 px-8 py-6">
         <div class="flex items-center justify-between mb-4">
-          <span class={`px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-wider ${project.type === 'Project' ? 'bg-blue-50 text-blue-600 border border-blue-100/50' : 'bg-purple-50 text-purple-600 border border-purple-100/50'}`}>
-            {project.type}
+          <span class={`px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-wider ${lab.type === 'Project' ? 'bg-blue-50 text-blue-600 border border-blue-100/50' : 'bg-orange-50 text-orange-600 border border-orange-100/50'}`}>
+            {lab.type}
           </span>
           <span class="text-[10px] text-slate-400 font-mono tracking-widest uppercase">
-            NODE_#{project.id}
+            NODE_#{lab.id}
           </span>
         </div>
-        <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight mb-4">{project.title}</h1>
+        <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight mb-4">{lab.title}</h1>
         
         <div class="flex flex-wrap gap-2">
-          {project.tools.split(',').map((tool) => (
+          {lab.tools.split(',').map((tool) => (
             <span class="px-2.5 py-1 bg-white border border-slate-200 text-slate-600 font-mono text-[10px] rounded-md shadow-sm">
               {tool.trim()}
             </span>

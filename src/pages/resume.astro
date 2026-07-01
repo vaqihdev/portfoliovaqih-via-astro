@@ -43,20 +43,20 @@ const title = content.personal?.fullName ? `Resume - ${content.personal.fullName
 <BaseLayout title={title}>
   
   <!-- Screen-only Layout -->
-  <div class="print:hidden min-h-screen bg-slate-50 py-12 px-4 flex flex-col items-center">
+  <div class="print:hidden min-h-screen bg-slate-50 py-6 sm:py-12 px-2 sm:px-4 flex flex-col items-center">
     <!-- Action Bar -->
-    <div class="w-full max-w-[850px] flex justify-end mb-6">
-      <button id="execute-pdf-print" class="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors shadow-sm cursor-pointer">
+    <div class="w-full max-w-[850px] flex justify-center sm:justify-end mb-4 sm:mb-6 px-2 sm:px-0">
+      <button id="execute-pdf-print" class="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 bg-slate-900 text-white rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors shadow-sm cursor-pointer">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
         Export PDF
       </button>
     </div>
 
     <!-- Main Card containing Navbar, Resume, and Footer -->
-    <main class="w-full max-w-[850px] bg-white shadow-xl rounded-xl border border-slate-200 overflow-hidden flex flex-col">
+    <main class="w-full max-w-[850px] bg-white shadow-sm sm:shadow-xl rounded-none sm:rounded-xl border-0 sm:border border-slate-200 overflow-hidden flex flex-col">
       <Navbar />
       
-      <div class="flex-1 px-4 sm:px-8 py-12 md:py-16">
+      <div class="flex-1 px-3 sm:px-8 py-8 sm:py-12 md:py-16">
         <HarvardTemplate content={content} />
       </div>
 
