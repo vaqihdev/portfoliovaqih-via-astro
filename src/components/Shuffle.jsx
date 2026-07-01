@@ -1,11 +1,6 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { SplitText as GSAPSplitText } from 'gsap/SplitText';
 import { useGSAP } from '@gsap/react';
 import './Shuffle.css';
-
-gsap.registerPlugin(ScrollTrigger, GSAPSplitText, useGSAP);
 
 const Shuffle = ({
   text,
@@ -59,7 +54,12 @@ const Shuffle = ({
   }, [threshold, rootMargin]);
 
   useGSAP(
-    () => {
+    async () => {
+      const { default: gsap } = await import('gsap');
+      const { default: ScrollTrigger } = await import('gsap/ScrollTrigger');
+      const { default: SplitTextPlugin } = await import('gsap/SplitText');
+      gsap.registerPlugin(ScrollTrigger, SplitTextPlugin);
+
       if (!ref.current || !text || !fontsLoaded) return;
       if (respectReducedMotion && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         setReady(true);
@@ -103,7 +103,7 @@ const Shuffle = ({
       const build = () => {
         teardown();
 
-        splitRef.current = new GSAPSplitText(el, {
+        splitRef.current = new SplitTextPlugin(el, {
           type: 'chars',
           charsClass: 'shuffle-char',
           wordsClass: 'shuffle-word',

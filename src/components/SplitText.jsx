@@ -1,10 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { SplitText as GSAPSplitText } from 'gsap/SplitText';
 import { useGSAP } from '@gsap/react';
-
-gsap.registerPlugin(ScrollTrigger, GSAPSplitText, useGSAP);
 
 const SplitText = ({
   text,
@@ -42,7 +37,12 @@ const SplitText = ({
   }, []);
 
   useGSAP(
-    () => {
+    async () => {
+      const { default: gsap } = await import('gsap');
+      const { default: ScrollTrigger } = await import('gsap/ScrollTrigger');
+      const { default: SplitTextPlugin } = await import('gsap/SplitText');
+      gsap.registerPlugin(ScrollTrigger, SplitTextPlugin);
+
       if (!ref.current || !text || !fontsLoaded) return;
       // Prevent re-animation if already completed
       if (animationCompletedRef.current) return;
@@ -77,7 +77,7 @@ const SplitText = ({
         if (!targets) targets = self.chars || self.words || self.lines;
       };
 
-      const splitInstance = new GSAPSplitText(el, {
+      const splitInstance = new SplitTextPlugin(el, {
         type: splitType,
         smartWrap: true,
         autoSplit: splitType === 'lines',
