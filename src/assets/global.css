@@ -15,7 +15,7 @@
 body {
   font-family: var(--font-sans);
   background-color: #f8fafc;
-  background-image: 
+  background-image:
     linear-gradient(#e2e8f0 1px, transparent 1px),
     linear-gradient(90deg, #e2e8f0 1px, transparent 1px);
   background-size: 32px 32px;
@@ -141,9 +141,11 @@ body {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+
   html {
     @apply font-sans;
   }
@@ -155,17 +157,21 @@ body {
   transform: translateY(30px);
   transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
 .reveal-on-scroll.is-visible {
   opacity: 1;
   transform: translateY(0);
 }
 
-/* Custom Cursor Rules */
+/*
+
 @media (hover: hover) and (pointer: fine) {
   * {
     cursor: none !important;
   }
 }
+
+*/
 
 /* Entrance Animations */
 .entrance-fade-up {
@@ -187,7 +193,18 @@ body.loader-finished .entrance-slide-down {
 }
 
 /* Staggering delays */
-.delay-100 { transition-delay: 100ms; }
-.delay-200 { transition-delay: 200ms; }
-.delay-300 { transition-delay: 300ms; }
-.delay-400 { transition-delay: 400ms; }
+.delay-100 {
+  transition-delay: 100ms;
+}
+
+.delay-200 {
+  transition-delay: 200ms;
+}
+
+.delay-300 {
+  transition-delay: 300ms;
+}
+
+.delay-400 {
+  transition-delay: 400ms;
+}
