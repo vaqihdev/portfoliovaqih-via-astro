@@ -9,7 +9,10 @@ export default defineConfig({
   output: 'server',
   adapter: vercel(),
   vite: {
-    plugins: [tailwindcss()]
+    plugins: [tailwindcss()],
+    ssr: {
+      noExternal: ['drizzle-orm', '@neondatabase/serverless', 'hono']
+    }
   },
   integrations: [react()]
 });
