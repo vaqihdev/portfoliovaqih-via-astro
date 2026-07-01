@@ -1,7 +1,0 @@
-{
-  "env": {
-    "ADMIN_USERNAME": "admin@vaqih.dev",
-    "ADMIN_PASSWORD": "password123",
-    "DATABASE_URL": "postgresql://neondb_owner:npg_PkmfLW4MJ2Bv@ep-weathered-glitter-atk5shrq-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require"
-  }
-}
