@@ -3,7 +3,7 @@ export const prerender = false;
 
 import '../../assets/global.css';
 import { db } from '../../db';
-import { engineeringAssets, landingMetadata, capabilities, resumeProfile, atsResumes } from '../../db/schema';
+import { engineeringAssets, landingMetadata, capabilities, atsResumes } from '../../db/schema';
 import { desc, asc } from 'drizzle-orm';
 
 const dbProjects = await db.select().from(engineeringAssets).orderBy(desc(engineeringAssets.id)).catch(() => []);
@@ -134,6 +134,8 @@ const groupedCaps = allCaps.reduce((acc: Record<string, CapItem[]>, cap: CapItem
             </div>
 
             <form id="projects-matrix-form" class="w-full lg:w-2/3 bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col gap-4">
+              <div id="edit-mode-badge" class="hidden px-3 py-2 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-lg text-xs font-mono font-bold flex items-center justify-between gap-2"><span>EDIT MODE - Currently Editing: <span id="edit-mode-title" class="text-yellow-900"></span></span><button type="button" id="cancel-edit-btn" style="position: relative; z-index: 50; pointer-events: auto; cursor: pointer;" class="text-yellow-600 hover:text-yellow-800 underline ml-auto border-none bg-transparent">Cancel</button></div>
+              <input type="hidden" id="form-asset-id" value="" />
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="flex flex-col gap-1">
                   <span class="text-[10px] font-bold tracking-widest text-slate-400 uppercase font-mono">// ASSET_TITLE</span>
@@ -219,7 +221,7 @@ const groupedCaps = allCaps.reduce((acc: Record<string, CapItem[]>, cap: CapItem
                         <th class="py-3 px-4 text-right">Operational Action</th>
                       </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100 text-slate-700">
+                    <tbody id="assets-tbody" class="divide-y divide-slate-100 text-slate-700">
                       {projects.filter(p => p.type && (p.type.toLowerCase() === 'project' || p.type.toLowerCase() === 'lab')).map((proj, i) => (
                         <tr class="hover:bg-slate-50/40 transition-colors duration-100">
                           <td class="py-3 px-4 font-mono text-slate-400">#{i + 1}</td>
@@ -228,7 +230,8 @@ const groupedCaps = allCaps.reduce((acc: Record<string, CapItem[]>, cap: CapItem
                             <span class={`px-2 py-0.5 rounded text-[9px] font-mono uppercase tracking-wider ${proj.type === 'Project' ? 'bg-blue-50 text-blue-600 border border-blue-100/60' : 'bg-orange-50 text-orange-600 border border-orange-100/60'}`}>{proj.type}</span>
                           </td>
                           <td class="py-3 px-4 text-slate-500 font-mono max-w-xs truncate">{proj.tools}</td>
-                          <td class="py-3 px-4 text-right">
+                          <td class="py-3 px-4 text-right whitespace-nowrap">
+                            <button data-edit-id={proj.id} class="text-blue-500 hover:text-blue-700 font-mono font-bold hover:underline bg-transparent cursor-pointer border-none py-1 px-2 rounded hover:bg-blue-50/30 transition-all mr-2">EDIT</button>
                             <button data-delete-id={proj.id} class="text-red-500 hover:text-red-700 font-mono font-bold hover:underline bg-transparent cursor-pointer border-none py-1 px-2 rounded hover:bg-red-50/30 transition-all">DELETE</button>
                           </td>
                         </tr>
@@ -599,11 +602,110 @@ const groupedCaps = allCaps.reduce((acc: Record<string, CapItem[]>, cap: CapItem
 
         const projForm = document.getElementById('projects-matrix-form');
         const projBtn = document.getElementById('projects-submit-btn');
+        let isEditing = false;
+        let editingAssetId = null;
+
+        async function fetchAndRenderProjects() {
+          try {
+            const res = await fetch('/api/projects-labs');
+            const result = await res.json();
+            if (result.success) {
+              window.activeProjects = result.data;
+              const tbody = document.getElementById('assets-tbody');
+              if (tbody) {
+                tbody.innerHTML = '';
+                result.data.filter(p => p.type && (p.type.toLowerCase() === 'project' || p.type.toLowerCase() === 'lab')).forEach((proj, i) => {
+                  const tr = document.createElement('tr');
+                  tr.className = "hover:bg-slate-50/40 transition-colors duration-100";
+                  const typeClass = proj.type === 'Project' ? 'bg-blue-50 text-blue-600 border border-blue-100/60' : 'bg-orange-50 text-orange-600 border border-orange-100/60';
+                  tr.innerHTML = `
+                    <td class="py-3 px-4 font-mono text-slate-400">#${i + 1}</td>
+                    <td class="py-3 px-4 font-bold text-slate-900">${proj.title}</td>
+                    <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-[9px] font-mono uppercase tracking-wider ${typeClass}">${proj.type}</span></td>
+                    <td class="py-3 px-4 text-slate-500 font-mono max-w-xs truncate">${proj.tools}</td>
+                    <td class="py-3 px-4 text-right whitespace-nowrap">
+                      <button data-edit-id="${proj.id}" class="text-blue-500 hover:text-blue-700 font-mono font-bold hover:underline bg-transparent cursor-pointer border-none py-1 px-2 rounded hover:bg-blue-50/30 transition-all mr-2">EDIT</button>
+                      <button data-delete-id="${proj.id}" class="text-red-500 hover:text-red-700 font-mono font-bold hover:underline bg-transparent cursor-pointer border-none py-1 px-2 rounded hover:bg-red-50/30 transition-all">DELETE</button>
+                    </td>
+                  `;
+                  tbody.appendChild(tr);
+                });
+              }
+            }
+          } catch(err) {
+            console.error('Failed to refresh table', err);
+          }
+        }
+
+        document.addEventListener('click', async (e) => {
+          const btnCancel = e.target.closest('#cancel-edit-btn');
+          if (btnCancel) {
+            e.preventDefault();
+            e.stopPropagation();
+            isEditing = false;
+            editingAssetId = null;
+            if (projForm) projForm.reset();
+            const idInput = document.getElementById('form-asset-id');
+            if (idInput) idInput.value = '';
+            const badge = document.getElementById('edit-mode-badge');
+            if (badge) badge.classList.add('hidden');
+            if (projBtn) projBtn.innerText = "[ DEPLOY ASSET TO LIVE LAYER ]";
+          }
+
+          const btnEdit = e.target.closest('[data-edit-id]');
+          if (btnEdit) {
+            const id = btnEdit.getAttribute('data-edit-id');
+            if (!window.activeProjects) {
+              const res = await fetch('/api/projects-labs');
+              const result = await res.json();
+              if (result.success) window.activeProjects = result.data;
+            }
+            const proj = window.activeProjects?.find(p => p.id == id);
+            if(proj) {
+              isEditing = true;
+              editingAssetId = proj.id;
+              document.getElementById('form-asset-id').value = proj.id;
+              document.getElementById('form-title').value = proj.title || '';
+              document.getElementById('form-type').value = proj.type || 'Project';
+              document.getElementById('form-tools').value = proj.technologyStack?.join(', ') || proj.tools || '';
+              document.getElementById('form-description').value = proj.detailedContent || proj.description || '';
+              document.getElementById('form-is-featured').checked = !!proj.isFeatured;
+              if(document.getElementById('form-status')) document.getElementById('form-status').value = proj.status || 'Completed';
+              if(document.getElementById('form-difficulty')) document.getElementById('form-difficulty').value = proj.difficulty || 'Intermediate';
+              if(document.getElementById('form-cloud-provider')) document.getElementById('form-cloud-provider').value = proj.cloudProvider || '';
+              if(document.getElementById('form-os')) document.getElementById('form-os').value = proj.operatingSystem || '';
+              
+              document.getElementById('edit-mode-badge').classList.remove('hidden');
+              document.getElementById('edit-mode-title').innerText = proj.title;
+              document.getElementById('projects-submit-btn').innerText = "UPDATE LIVE ASSET";
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }
+
+          const btnDel = e.target.closest('[data-delete-id]');
+          if (btnDel) {
+            const targetId = btnDel.getAttribute('data-delete-id');
+            if (!confirm(`Are you strictly authorized to wipe asset node row #${targetId}?`)) return;
+            
+            try {
+              const res = await fetch(`/api/projects-labs/${targetId}`, { method: 'DELETE' });
+              const r = await res.json();
+              if (r.success) {
+                alert('🗑️ Operational Item purged from Neon ecosystem.');
+                fetchAndRenderProjects();
+              } else {
+                alert('❌ Deletion failed: ' + r.message);
+              }
+            } catch {
+              alert('❌ Net Connection Lost while hitting delete endpoint proxy.');
+            }
+          }
+        });
 
         if (projForm && projBtn) {
           projForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            projBtn.innerText = "EXECUTING SQL CLUSTER INSERT...";
+            projBtn.innerText = isEditing ? "UPDATING ASSET..." : "EXECUTING SQL CLUSTER INSERT...";
             projBtn.disabled = true;
 
             const payload = {
@@ -619,8 +721,10 @@ const groupedCaps = allCaps.reduce((acc: Record<string, CapItem[]>, cap: CapItem
             };
 
             try {
-              const response = await fetch('/api/projects-labs', {
-                method: 'POST',
+              const method = isEditing ? 'PUT' : 'POST';
+              const url = isEditing ? `/api/projects-labs/${editingAssetId}` : '/api/projects-labs';
+              const response = await fetch(url, {
+                method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
               });
@@ -629,16 +733,23 @@ const groupedCaps = allCaps.reduce((acc: Record<string, CapItem[]>, cap: CapItem
               const result = await response.json();
 
               if (result.success) {
-                alert('🚀 ASSET NODE SUCCESSFULLY REGISTERED IN LIVE ENVIRONMENT!');
-                window.location.reload();
+                alert(isEditing ? '🚀 ASSET NODE SUCCESSFULLY UPDATED!' : '🚀 ASSET NODE SUCCESSFULLY REGISTERED IN LIVE ENVIRONMENT!');
+                isEditing = false;
+                editingAssetId = null;
+                projForm.reset();
+                document.getElementById('form-asset-id').value = '';
+                document.getElementById('edit-mode-badge').classList.add('hidden');
+                projBtn.innerText = "[ DEPLOY ASSET TO LIVE LAYER ]";
+                fetchAndRenderProjects();
               } else {
                 alert('❌ Database Error: ' + result.message);
+                projBtn.innerText = isEditing ? "UPDATE LIVE ASSET" : "[ DEPLOY ASSET TO LIVE LAYER ]";
               }
             } catch (err) {
               console.error(err);
               alert('❌ Pipe Failure: Verify the active status of your DATABASE_URL link parameters.');
+              projBtn.innerText = isEditing ? "UPDATE LIVE ASSET" : "[ DEPLOY ASSET TO LIVE LAYER ]";
             } finally {
-              projBtn.innerText = "[ DEPLOY ASSET TO LIVE LAYER ]";
               projBtn.disabled = false;
             }
           });
@@ -694,25 +805,7 @@ const groupedCaps = allCaps.reduce((acc: Record<string, CapItem[]>, cap: CapItem
         });
       }
 
-      document.querySelectorAll('[data-delete-id]').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            const targetId = btn.getAttribute('data-delete-id');
-            if (!confirm(`Are you strictly authorized to wipe asset node row #${targetId}?`)) return;
-            
-            try {
-              const res = await fetch(`/api/projects-labs/${targetId}`, { method: 'DELETE' });
-              const r = await res.json();
-              if (r.success) {
-                alert('🗑️ Operational Item purged from Neon ecosystem.');
-                window.location.reload();
-              } else {
-                alert('❌ Deletion failed: ' + r.message);
-              }
-            } catch {
-              alert('❌ Net Connection Lost while hitting delete endpoint proxy.');
-            }
-          });
-        });
+        // Delete handled above via event delegation.
 
         // --- Engineering Logs CRUD via Modal ---
         const capModal = document.getElementById('capability-modal');

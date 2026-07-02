@@ -158,6 +158,30 @@ app.post('/projects-labs', async (c) => {
   }
 });
 
+app.put('/projects-labs/:id', async (c) => {
+  try {
+    const id = parseInt(c.req.param('id'), 10);
+    const body = await c.req.json();
+    await db.update(engineeringAssets).set({
+      title: body.title,
+      slug: body.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
+      type: body.type,
+      summary: body.description?.substring(0, 150) || '',
+      detailedContent: body.description || '',
+      status: body.status || 'Completed',
+      difficulty: body.difficulty || 'Intermediate',
+      technologyStack: body.tools ? body.tools.split(',').map((t: string) => t.trim()) : [],
+      cloudProvider: body.cloudProvider || 'Unknown',
+      operatingSystem: body.operatingSystem || 'Linux',
+      isFeatured: body.isFeatured === true || body.isFeatured === 'true',
+      updatedAt: new Date()
+    }).where(eq(engineeringAssets.id, id));
+    return c.json({ success: true });
+  } catch (err) {
+    return c.json({ success: false, message: 'Update failed' }, 500);
+  }
+});
+
 app.delete('/projects-labs/:id', async (c) => {
   try {
     const id = parseInt(c.req.param('id'), 10);

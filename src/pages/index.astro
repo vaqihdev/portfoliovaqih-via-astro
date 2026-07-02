@@ -41,16 +41,7 @@ try {
   console.error("Database connection error in index.astro:", error);
 }
 
-// Group labs by month
-const groupLabsByMonth = (labs: typeof recentLabs) => {
-  const groups: Record<string, typeof recentLabs> = {};
-  labs.forEach(lab => {
-    const key = 'Recent';
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(lab);
-  });
-  return groups;
-};
+
 
 const now = new Date();
 const monthLabel = now.toLocaleString('en-US', { month: 'long' }) + ' ' + now.getFullYear();

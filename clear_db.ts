@@ -1,10 +1,10 @@
 import { db } from './src/db/index';
-import { projectsLabs } from './src/db/schema';
+import { engineeringAssets } from './src/db/schema';
 
 async function clearDB() {
-  console.log("Clearing projectsLabs table...");
+  console.log("Clearing engineeringAssets table...");
   try {
-    await db.delete(projectsLabs);
+    await db.delete(engineeringAssets);
     console.log("Database cleared successfully!");
   } catch (err) {
     console.error("Error clearing database:", err);
